@@ -1,0 +1,3677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deriv Terminal · Live Signal Engine</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #06080c;
+    --surface: #0c1017;
+    --surface-2: #101621;
+    --surface-3: #151c28;
+    --surface-4: #1a2230;
+    --line: #1d2735;
+    --line-strong: #2a394d;
+    --text: #f4f7fb;
+    --text-soft: #a7b2c4;
+    --text-muted: #748094;
+    --text-faint: #4e5a6d;
+    --blue: #5aa7ff;
+    --blue-soft: rgba(90,167,255,.12);
+    --green: #22d79a;
+    --green-soft: rgba(34,215,154,.11);
+    --red: #ff5b6e;
+    --red-soft: rgba(255,91,110,.11);
+    --amber: #ffbf5e;
+    --amber-soft: rgba(255,191,94,.11);
+    --purple: #a78bfa;
+    --purple-soft: rgba(167,139,250,.11);
+    --cyan: #47d3ff;
+    --shadow-lg: 0 22px 60px rgba(0,0,0,.34);
+    --shadow-md: 0 12px 36px rgba(0,0,0,.24);
+    --radius-lg: 18px;
+    --radius-md: 14px;
+    --radius-sm: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { min-height: 100%; scroll-behavior: smooth; }
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% -10%, rgba(90,167,255,.10), transparent 34%),
+      radial-gradient(circle at 92% 8%, rgba(167,139,250,.08), transparent 30%),
+      var(--bg);
+    color: var(--text);
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "tnum", "cv11", "ss01";
+  }
+  button, input, select { font: inherit; }
+  button { -webkit-tap-highlight-color: transparent; }
+  .mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* AUTH */
+  .auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(180deg, #05070a, #080b10);
+  }
+  .auth-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+    background-size: 32px 32px;
+    mask-image: linear-gradient(to bottom, rgba(0,0,0,.55), transparent 72%);
+  }
+  .auth-screen.hidden { display: none; }
+  .auth-card {
+    position: relative;
+    z-index: 1;
+    width: min(100%, 420px);
+    padding: 34px;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    background: rgba(12,16,23,.94);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(18px);
+  }
+  .auth-brand { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 26px; }
+  .auth-brand-mark, .brand-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    color: #fff;
+    font-weight: 800;
+    background: linear-gradient(135deg, #4d9dff, #6c63f6);
+  }
+  .auth-brand-mark { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 8px 28px rgba(90,167,255,.28); }
+  .auth-brand-text { display: flex; flex-direction: column; gap: 1px; }
+  .auth-brand-title { font-size: 16px; font-weight: 750; letter-spacing: -.25px; }
+  .auth-brand-sub, .brand-sub { color: var(--text-muted); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+  .auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    padding: 3px;
+    margin-bottom: 22px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(0,0,0,.16);
+  }
+  .auth-tab {
+    border: 0;
+    border-radius: 9px;
+    padding: 10px 12px;
+    color: var(--text-muted);
+    background: transparent;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .auth-tab:hover { color: var(--text); background: rgba(255,255,255,.025); }
+  .auth-tab.active { color: var(--text); background: var(--surface-3); box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+  .auth-form { display: flex; flex-direction: column; gap: 14px; }
+  .auth-form.hidden { display: none; }
+  .auth-field { display: flex; flex-direction: column; gap: 7px; }
+  .auth-field-label, .field-label {
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .auth-input, select, input[type=number] {
+    width: 100%;
+    outline: 0;
+    border: 1px solid var(--line-strong);
+    border-radius: 10px;
+    padding: 11px 12px;
+    color: var(--text);
+    background: var(--surface-2);
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+  }
+  .auth-input:hover, select:hover, input[type=number]:hover { border-color: #34465e; }
+  .auth-input:focus, select:focus, input[type=number]:focus {
+    border-color: rgba(90,167,255,.75);
+    box-shadow: 0 0 0 3px rgba(90,167,255,.10);
+    background: var(--surface-2);
+  }
+  .auth-submit {
+    margin-top: 4px;
+    border: 0;
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: #fff;
+    background: linear-gradient(135deg, #4d9dff, #6663f4);
+    font-size: 13px;
+    font-weight: 750;
+    cursor: pointer;
+    box-shadow: 0 10px 22px rgba(77,157,255,.18);
+    transition: transform .15s ease, opacity .15s ease;
+  }
+  .auth-submit:hover { opacity: .94; transform: translateY(-1px); }
+  .auth-error {
+    display: none;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,91,110,.25);
+    border-radius: 9px;
+    color: var(--red);
+    background: var(--red-soft);
+    font-size: 12px;
+  }
+  .auth-error.show { display: block; }
+  .auth-hint { margin-top: 2px; color: var(--text-muted); text-align: center; font-size: 11px; line-height: 1.65; }
+
+  /* HEADER */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(29,39,53,.95);
+    background: rgba(6,8,12,.82);
+    backdrop-filter: blur(18px);
+  }
+  .topbar-inner {
+    max-width: 1500px;
+    margin: 0 auto;
+    min-height: 68px;
+    padding: 10px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-mark { width: 30px; height: 30px; border-radius: 8px; font-size: 13px; box-shadow: 0 6px 18px rgba(90,167,255,.24); }
+  .brand-text { color: var(--text); font-size: 14px; font-weight: 750; letter-spacing: -.2px; }
+  .status-cluster { display: flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; }
+  .clock { color: var(--text-muted); font-size: 10px; }
+  .notif-btn, .user-chip, .connection-pill {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface-2);
+  }
+  .notif-btn {
+    gap: 7px;
+    padding: 6px 10px;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
+  }
+  .notif-btn:hover { color: var(--text); border-color: #35465e; }
+  .notif-btn.enabled { color: var(--green); background: var(--green-soft); border-color: rgba(34,215,154,.25); }
+  .connection-pill { gap: 7px; padding: 6px 10px; color: var(--text-muted); font-size: 10px; font-weight: 700; }
+  .connection-pill:not(.off):not(.error) { color: var(--green); background: var(--green-soft); border-color: rgba(34,215,154,.25); }
+  .connection-pill.error { color: var(--red); background: var(--red-soft); border-color: rgba(255,91,110,.25); }
+  .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 0 currentColor; }
+  .connection-pill:not(.off):not(.error) .pulse-dot { animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(34,215,154,.45)} 70%{box-shadow:0 0 0 7px rgba(34,215,154,0)} 100%{box-shadow:0 0 0 0 rgba(34,215,154,0)} }
+  .connection-pill.off .pulse-dot, .connection-pill.error .pulse-dot { background: currentColor; box-shadow: none; }
+  .user-chip {
+    position: relative;
+    gap: 8px;
+    padding: 4px 10px 4px 4px;
+    cursor: pointer;
+    transition: border-color .18s ease;
+  }
+  .user-chip:hover { border-color: #35465e; }
+  .user-avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #4d9dff, #6c63f6); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .user-name { max-width: 110px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; color: var(--text-soft); font-size: 10px; font-weight: 700; }
+  .role-badge { display:inline-flex; align-items:center; padding:3px 7px; border-radius:999px; background:rgba(167,139,250,.12); color:var(--purple); border:1px solid rgba(167,139,250,.22); font-size:8px; font-weight:800; letter-spacing:.7px; text-transform:uppercase; }
+  .role-badge.user { background:rgba(107,118,137,.10); color:var(--text-muted); border-color:rgba(107,118,137,.18); }
+  .reconnect-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text-soft); cursor:pointer; font-family:inherit; font-size:10px; font-weight:700; transition:border-color .18s ease,color .18s ease,background .18s ease; }
+  .reconnect-btn:hover { color:var(--text); border-color:#35465e; background:var(--surface-3); }
+  .reconnect-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .user-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 220px;
+    padding: 6px;
+    border: 1px solid var(--line-strong);
+    border-radius: 14px;
+    background: rgba(12,16,23,.98);
+    box-shadow: var(--shadow-lg);
+  }
+  .user-menu.open { display: block; }
+  .user-menu-info { padding: 10px 11px; margin-bottom: 5px; border-bottom: 1px solid var(--line); }
+  .user-menu-name { font-size: 12px; font-weight: 750; }
+  .user-menu-email { margin-top: 2px; color: var(--text-muted); font-size: 10px; }
+  .user-menu-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: 8px; color: var(--text-soft); cursor: pointer; font-size: 11px; font-weight: 600; }
+  .user-menu-item:hover { background: var(--surface-2); color: var(--text); }
+  .user-menu-item.danger:hover { background: var(--red-soft); color: var(--red); }
+  .menu-count { margin-left: auto; padding: 2px 6px; border-radius: 99px; background: var(--purple-soft); color: var(--purple); font-size: 9px; font-weight: 800; }
+
+  /* MAIN */
+  .main { max-width: 1500px; margin: 0 auto; padding: 22px; }
+  .layout { display: grid; grid-template-columns: minmax(0,1fr) 330px; gap: 18px; align-items: start; }
+
+  /* MODE TABS */
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 4px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: rgba(12,16,23,.78);
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 38px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 9px;
+    color: var(--text-muted);
+    background: transparent;
+    white-space: nowrap;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    transition: background .18s ease, color .18s ease;
+  }
+  .tab:hover { color: var(--text); background: rgba(255,255,255,.025); }
+  .tab.active { color: var(--text); background: var(--surface-3); box-shadow: 0 3px 12px rgba(0,0,0,.2); }
+  .tab-icon { color: var(--text-faint); font-size: 12px; }
+  .tab.active .tab-icon.regular { color: var(--blue); }
+  .tab.active .tab-icon.inverted { color: var(--purple); }
+  .tab.active .tab-icon.smc { color: var(--amber); }
+  .tab.active .tab-icon.trendline { color: var(--cyan); }
+  .tab.active .tab-icon.patterns { color: #f472b6; }
+  .tab.active .tab-badge.patterns { color: #f472b6; background: rgba(244,114,182,.12); }
+  .section-title.patterns::before { background: #f472b6; }
+  .mode-badge.patterns { color: #f472b6; background: rgba(244,114,182,.12); }
+  .event-title.patterns { color: #f472b6; }
+  .event-icon.patterns { background: #f472b6; }
+
+  /* PATTERN SCANNER */
+  .pattern-panel {
+    margin-bottom: 18px; padding: 15px; border: 1px solid var(--line);
+    border-radius: var(--radius-md); background: rgba(12,16,23,.93);
+  }
+  .pattern-panel-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .pattern-panel-title { color:var(--text); font-size:10px; font-weight:800; letter-spacing:1.15px; text-transform:uppercase; }
+  .pattern-panel-count { color:var(--text-faint); font:700 9px/1 "JetBrains Mono",monospace; margin-left:auto; }
+  .pattern-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .pattern-row { display:grid; grid-template-columns:minmax(0,1.45fr) .7fr .62fr .48fr; gap:8px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:9px; background:var(--surface-2); }
+  .pattern-row:hover { border-color:var(--line-strong); background:rgba(255,255,255,.018); }
+  .pattern-name { min-width:0; color:var(--text); font-size:10px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .pattern-meta { color:var(--text-muted); font-size:8px; text-transform:uppercase; letter-spacing:.7px; }
+  .pattern-direction { font-size:8px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+  .pattern-direction.bull { color:var(--green); }
+  .pattern-direction.bear { color:var(--red); }
+  .pattern-direction.neutral { color:var(--amber); }
+  .pattern-confidence { justify-self:end; min-width:34px; padding:3px 5px; border-radius:5px; text-align:center; font:800 8px/1 "JetBrains Mono",monospace; color:#f472b6; background:rgba(244,114,182,.10); }
+  .pattern-empty { padding:28px 12px; color:var(--text-muted); text-align:center; font-size:10px; }
+  .pattern-library { margin-top:12px; display:flex; flex-wrap:wrap; gap:5px; }
+  .pattern-chip { padding:5px 7px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--text-muted); font-size:8px; font-weight:700; }
+  .pattern-chip.bull { border-color:rgba(34,215,154,.18); color:var(--green); }
+  .pattern-chip.bear { border-color:rgba(255,91,110,.18); color:var(--red); }
+  .pattern-chip.neutral { border-color:rgba(255,191,94,.18); color:var(--amber); }
+  .pattern-card-active { border-color:rgba(244,114,182,.25); background:linear-gradient(180deg,rgba(244,114,182,.055),rgba(12,16,23,.93)); }
+
+  .tab-badge { min-width: 20px; padding: 2px 6px; border-radius: 99px; background: rgba(255,255,255,.03); color: var(--text-muted); font-size: 9px; font-weight: 800; }
+  .tab.active .tab-badge.regular { color: var(--blue); background: var(--blue-soft); }
+  .tab.active .tab-badge.inverted { color: var(--purple); background: var(--purple-soft); }
+  .tab.active .tab-badge.smc { color: var(--amber); background: var(--amber-soft); }
+  .tab.active .tab-badge.trendline { color: var(--cyan); background: rgba(71,211,255,.12); }
+  .tabs { max-width: 100%; overflow-x: auto; scrollbar-width: thin; }
+  .tab { flex: 0 0 auto; }
+  .tab-hint { margin-left: auto; padding: 0 10px; color: var(--text-faint); font-size: 10px; white-space: nowrap; }
+
+  /* SIGNAL */
+  .signal-card {
+    position: relative;
+    min-height: 248px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    padding: 30px;
+    margin-bottom: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, rgba(16,22,33,.94), rgba(10,14,20,.97));
+    box-shadow: var(--shadow-md);
+    transition: border-color .28s ease, box-shadow .28s ease, background .28s ease;
+  }
+  .signal-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% -20%, rgba(255,255,255,.06), transparent 42%);
+  }
+  .signal-card.long { border-color: rgba(34,215,154,.28); background: linear-gradient(180deg, rgba(34,215,154,.09), rgba(10,14,20,.97) 65%); box-shadow: 0 20px 55px rgba(34,215,154,.09); }
+  .signal-card.short { border-color: rgba(255,91,110,.28); background: linear-gradient(180deg, rgba(255,91,110,.09), rgba(10,14,20,.97) 65%); box-shadow: 0 20px 55px rgba(255,91,110,.08); }
+  .signal-card.smc-long, .signal-card.smc-short { border-color: rgba(255,191,94,.28); background: linear-gradient(180deg, rgba(255,191,94,.07), rgba(10,14,20,.97) 65%); box-shadow: 0 20px 55px rgba(255,191,94,.07); }
+  .signal-eyebrow { position: relative; z-index: 1; margin-bottom: 8px; color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
+  .signal-main { position: relative; z-index: 1; color: var(--text-faint); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: clamp(58px,7vw,84px); font-weight: 800; letter-spacing: -4px; line-height: .95; }
+  .signal-card.long .signal-main, .signal-card.smc-long .signal-main { color: var(--green); text-shadow: 0 0 32px rgba(34,215,154,.28); }
+  .signal-card.short .signal-main, .signal-card.smc-short .signal-main { color: var(--red); text-shadow: 0 0 32px rgba(255,91,110,.24); }
+  .signal-desc { position: relative; z-index: 1; max-width: 650px; margin-top: 12px; color: var(--text-soft); text-align: center; font-size: 12px; }
+  .signal-price-block { position: relative; z-index: 1; display: flex; align-items: baseline; gap: 12px; margin-top: 20px; padding-top: 17px; border-top: 1px solid rgba(255,255,255,.06); }
+  .signal-price-label { color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+  .signal-price-value { color: var(--text); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 24px; font-weight: 700; letter-spacing: -.7px; }
+
+  /* SECTIONS */
+  .section-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; margin: 4px 0 10px; }
+  .section-title { color: var(--text-muted); font-size: 10px; font-weight: 800; letter-spacing: 1.35px; text-transform: uppercase; }
+  .section-title::before { content: ""; display: inline-block; width: 3px; height: 11px; margin-right: 9px; border-radius: 99px; background: var(--blue); vertical-align: -1px; }
+  .section-title.inverted::before { background: var(--purple); }
+  .section-title.smc::before { background: var(--amber); }
+  .section-title.trendline::before { background: var(--cyan); }
+
+  /* PLAN / METRICS */
+  .trade-plan { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 18px; }
+  .plan-card, .metric-card, .chart-card, .history-panel, .panel {
+    border: 1px solid var(--line);
+    background: rgba(12,16,23,.93);
+  }
+  .plan-card { position: relative; overflow: hidden; padding: 16px; border-radius: var(--radius-md); }
+  .plan-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--text-faint); }
+  .plan-card.entry::before { background: var(--blue); }
+  .plan-card.sl::before { background: var(--red); }
+  .plan-card.tp::before { background: var(--green); }
+  .plan-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 11px; }
+  .plan-label, .metric-label { color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .plan-tag { padding: 3px 6px; border-radius: 5px; background: var(--surface-3); color: var(--text-muted); font-size: 8px; font-weight: 800; letter-spacing: .5px; }
+  .plan-tag.blue { color: var(--blue); background: var(--blue-soft); }
+  .plan-tag.red { color: var(--red); background: var(--red-soft); }
+  .plan-tag.green { color: var(--green); background: var(--green-soft); }
+  .plan-value { color: var(--text); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 23px; font-weight: 750; letter-spacing: -.8px; line-height: 1.05; }
+  .plan-card.entry .plan-value { color: var(--blue); }
+  .plan-card.sl .plan-value { color: var(--red); }
+  .plan-card.tp .plan-value { color: var(--green); }
+  .plan-sub { margin-top: 6px; color: var(--text-muted); font-size: 10px; }
+  .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+  .metric-card { padding: 14px; border-radius: 12px; }
+  .metric-label { margin-bottom: 6px; }
+  .metric-value { color: var(--text); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 18px; font-weight: 750; letter-spacing: -.4px; }
+  .metric-value.dim { color: var(--text-faint); }
+
+  /* CHART */
+  .chart-card { padding: 16px; margin-bottom: 18px; border-radius: var(--radius-md); }
+  .chart-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .chart-title { color: var(--text-muted); font-size: 10px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+  .chart-meta { display: flex; gap: 10px; margin-left: auto; color: var(--text-faint); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9px; }
+  .chart-legend-inline { display: flex; gap: 10px; color: var(--text-muted); font-size: 9px; }
+  .chart-legend-inline span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .legend-dot.bull { background: var(--green); }
+  .legend-dot.bear { background: var(--red); }
+  canvas { width: 100% !important; height: 290px !important; display: block; }
+
+  /* HISTORY */
+  .history-panel { padding: 16px; margin-bottom: 6px; border-radius: var(--radius-md); }
+  .insight-card { display: flex; align-items: center; gap: 11px; padding: 11px 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: 11px; background: linear-gradient(135deg, rgba(90,167,255,.05), rgba(167,139,250,.035)); }
+  .insight-icon { width: 32px; height: 32px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); font-size: 15px; }
+  .insight-body { min-width: 0; }
+  .insight-title { margin-bottom: 2px; color: var(--text-muted); font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .insight-text { color: var(--text); font-size: 11px; font-weight: 600; }
+  .insight-text strong { color: var(--green); }
+  .insight-text .red { color: var(--red); }
+  .insight-text .blue { color: var(--blue); }
+  .insight-text .purple { color: var(--purple); }
+  .insight-text .amber { color: var(--amber); }
+  .insight-text .trendline { color: var(--cyan); }
+  .stats-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-box { padding: 10px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); text-align: center; }
+  .stat-box-label { margin-bottom: 5px; color: var(--text-muted); font-size: 8px; font-weight: 800; letter-spacing: .95px; text-transform: uppercase; }
+  .stat-box-value { color: var(--text); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 15px; font-weight: 750; }
+  .stat-box-value.win, .stat-box-value.pos { color: var(--green); }
+  .stat-box-value.loss, .stat-box-value.neg { color: var(--red); }
+  .stat-box-value.dim { color: var(--text-faint); }
+  .history-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 10px; }
+  .filter-btn, .export-btn {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 750;
+    transition: border-color .16s ease, color .16s ease, background .16s ease;
+  }
+  .filter-btn { padding: 6px 9px; }
+  .filter-btn:hover, .export-btn:hover { border-color: var(--line-strong); color: var(--text); background: var(--surface-3); }
+  .filter-btn.active { color: var(--text); background: var(--surface-3); border-color: var(--line-strong); }
+  .filter-btn.active.blue { color: var(--blue); border-color: rgba(90,167,255,.3); }
+  .filter-btn.active.purple { color: var(--purple); border-color: rgba(167,139,250,.3); }
+  .filter-btn.active.amber { color: var(--amber); border-color: rgba(255,191,94,.3); }
+  .export-btn { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; padding: 6px 10px; }
+  .export-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .history-count { margin-right: 2px; color: var(--text-faint); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9px; }
+  .trade-table-wrap { max-height: 410px; overflow: auto; border: 1px solid var(--line); border-radius: 10px; scrollbar-width: thin; scrollbar-color: #2c3a4d transparent; }
+  .trade-table { width: 100%; border-collapse: collapse; min-width: 760px; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px; }
+  .trade-table th { position: sticky; top: 0; z-index: 2; padding: 9px 10px; border-bottom: 1px solid var(--line-strong); background: #111721; color: var(--text-muted); text-align: left; font-family: Inter, sans-serif; font-size: 8px; font-weight: 800; letter-spacing: .95px; text-transform: uppercase; cursor: pointer; white-space: nowrap; }
+  .trade-table th.sorted { color: var(--blue); }
+  .trade-table th .sort-arrow { margin-left: 4px; opacity: .35; }
+  .trade-table th.sorted .sort-arrow { opacity: 1; }
+  .trade-table td { padding: 9px 10px; border-bottom: 1px solid var(--line); color: var(--text-soft); white-space: nowrap; }
+  .trade-table tr:last-child td { border-bottom: 0; }
+  .trade-table tr:hover td { background: rgba(255,255,255,.018); }
+  .trade-table td.entry-cell { color: var(--blue); font-weight: 700; }
+  .trade-table td.sl-cell { color: var(--red); }
+  .trade-table td.tp-cell { color: var(--green); }
+  .trade-table td.pos { color: var(--green); font-weight: 700; }
+  .trade-table td.neg { color: var(--red); font-weight: 700; }
+  .result-badge, .mode-badge, .dir-badge { display: inline-block; border-radius: 5px; font-family: Inter, sans-serif; font-size: 8px; font-weight: 800; letter-spacing: .45px; }
+  .result-badge { padding: 3px 6px; }
+  .result-badge.win { color: var(--green); background: var(--green-soft); }
+  .result-badge.loss { color: var(--red); background: var(--red-soft); }
+  .result-badge.open { color: var(--blue); background: var(--blue-soft); }
+  .result-badge.expired { color: var(--text-muted); background: rgba(116,128,148,.12); }
+  .mode-badge, .dir-badge { padding: 3px 5px; }
+  .mode-badge.regular { color: var(--blue); background: var(--blue-soft); }
+  .mode-badge.inverted { color: var(--purple); background: var(--purple-soft); }
+  .mode-badge.smc { color: var(--amber); background: var(--amber-soft); }
+  .mode-badge.trendline { color: var(--cyan); background: rgba(71,211,255,.12); }
+  .dir-badge.bull { color: var(--green); background: var(--green-soft); }
+  .dir-badge.bear { color: var(--red); background: var(--red-soft); }
+  .empty-history { padding: 34px 18px !important; color: var(--text-muted) !important; text-align: center; font-family: Inter, sans-serif; }
+
+  /* SIDEBAR */
+  .sidebar { position: sticky; top: 86px; display: flex; flex-direction: column; gap: 12px; max-height: calc(100vh - 104px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: #2c3a4d transparent; }
+  .sidebar::-webkit-scrollbar, .trade-table-wrap::-webkit-scrollbar, .event-log::-webkit-scrollbar { width: 5px; height: 5px; }
+  .sidebar::-webkit-scrollbar-thumb, .trade-table-wrap::-webkit-scrollbar-thumb, .event-log::-webkit-scrollbar-thumb { background: #2c3a4d; border-radius: 99px; }
+  .panel { padding: 15px; border-radius: 13px; }
+  .panel-title { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--text-muted); font-size: 10px; font-weight: 800; letter-spacing: 1.15px; text-transform: uppercase; }
+  .panel-title::before { content: ""; width: 3px; height: 11px; border-radius: 99px; background: var(--blue); }
+  .panel-title.notif::before { background: var(--amber); }
+  .field { margin-bottom: 11px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { display: block; margin-bottom: 6px; }
+  select { appearance: none; -webkit-appearance: none; padding-right: 33px; background-image: linear-gradient(45deg,transparent 50%,#738097 50%),linear-gradient(135deg,#738097 50%,transparent 50%); background-position: calc(100% - 15px) 48%,calc(100% - 11px) 48%; background-size: 4px 4px,4px 4px; background-repeat: no-repeat; }
+  .notif-status { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 9px 10px; margin-bottom: 9px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); color: var(--text-muted); font-size: 10px; }
+  .notif-status.granted { border-color: rgba(34,215,154,.25); background: var(--green-soft); color: var(--green); }
+  .notif-status.denied { border-color: rgba(255,91,110,.25); background: var(--red-soft); color: var(--red); }
+  .enable-notif-btn { width: 100%; margin-bottom: 12px; padding: 9px 10px; border: 0; border-radius: 9px; color: #201507; background: linear-gradient(135deg,#ffbf5e,#ffad47); cursor: pointer; font-size: 10px; font-weight: 800; transition: opacity .16s ease, transform .16s ease; }
+  .enable-notif-btn:hover { opacity: .92; transform: translateY(-1px); }
+  .enable-notif-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+  .notif-list { display: flex; flex-direction: column; gap: 6px; }
+  .check-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-2); cursor: pointer; user-select: none; transition: border-color .16s ease, background .16s ease; }
+  .check-row:hover { border-color: var(--line-strong); }
+  .check-row.checked { background: rgba(90,167,255,.045); border-color: rgba(90,167,255,.22); }
+  .check-label { display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--text-soft); font-size: 10px; font-weight: 600; }
+  .check-row.checked .check-label { color: var(--text); }
+  .check-dot { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--text-faint); }
+  .check-dot.blue { background: var(--blue); }
+  .check-dot.purple { background: var(--purple); }
+  .check-dot.green { background: var(--green); }
+  .check-dot.red { background: var(--red); }
+  .check-dot.amber { background: var(--amber); }
+  .check-row:not(.checked) .check-dot { opacity: .35; }
+  .check-box { width: 16px; height: 16px; flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 5px; background: transparent; }
+  .check-row.checked .check-box { display: grid; place-items: center; border-color: var(--blue); background: var(--blue); }
+  .check-row.checked .check-box::after { content: ""; width: 7px; height: 3px; border-left: 1.7px solid #fff; border-bottom: 1.7px solid #fff; transform: rotate(-45deg) translateY(-1px); }
+  .event-log { max-height: 360px; overflow-y: auto; margin-right: -4px; padding-right: 4px; scrollbar-width: thin; scrollbar-color: #2c3a4d transparent; }
+  .event-item { display: grid; grid-template-columns: 48px minmax(0,1fr); gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .event-item:last-child { border-bottom: 0; }
+  .event-time { padding-top: 1px; color: var(--text-faint); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9px; }
+  .event-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .event-title { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 800; }
+  .event-title.bull { color: var(--green); }
+  .event-title.bear { color: var(--red); }
+  .event-title.sweep, .event-title.ob { color: var(--amber); }
+  .event-title.fvg { color: var(--purple); }
+  .event-title.trendline { color: var(--cyan); }
+  .event-detail { color: var(--text-muted); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .event-icon { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; }
+  .event-icon.bull { background: var(--green); }
+  .event-icon.bear { background: var(--red); }
+  .event-icon.sweep, .event-icon.ob { background: var(--amber); }
+  .event-icon.fvg { background: var(--purple); }
+  .event-icon.trendline { background: var(--cyan); }
+  .empty-state { padding: 26px 10px; color: var(--text-muted); text-align: center; font-size: 10px; }
+
+  /* ADMIN PANEL */
+  .modal-overlay { position: fixed; inset: 0; z-index: 400; display: none; align-items: center; justify-content: center; padding: 22px; background: rgba(3,5,8,.74); backdrop-filter: blur(7px); }
+  .modal-overlay.open { display: flex; }
+  .modal { width: min(100%, 980px); max-height: min(88vh, 840px); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 18px; background: rgba(10,14,20,.98); box-shadow: var(--shadow-lg); animation: modalIn .2s ease both; }
+  @keyframes modalIn { from { opacity: 0; transform: translateY(-8px) scale(.99); } to { opacity: 1; transform: none; } }
+  .modal-head { display: flex; align-items: flex-start; gap: 12px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
+  .modal-title { font-size: 14px; font-weight: 750; letter-spacing: -.2px; }
+  .modal-sub { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+  .modal-close { margin-left: auto; width: 30px; height: 30px; display: grid; place-items: center; flex: 0 0 auto; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface-2); color: var(--text-muted); cursor: pointer; font-size: 16px; line-height: 1; }
+  .modal-close:hover { color: var(--text); border-color: #35465e; }
+  .modal-body { padding: 16px 20px 20px; overflow-y: auto; }
+  .admin-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  .admin-stat { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+  .admin-stat-label { margin-bottom: 5px; color: var(--text-muted); font-size: 8px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .admin-stat-value { color: var(--text); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 18px; font-weight: 750; }
+  .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .admin-search { flex: 1; min-width: 200px; outline: 0; border: 1px solid var(--line-strong); border-radius: 10px; padding: 9px 12px; color: var(--text); background: var(--surface-2); font-size: 11px; }
+  .admin-search:hover { border-color: #34465e; }
+  .admin-search:focus { border-color: rgba(90,167,255,.75); box-shadow: 0 0 0 3px rgba(90,167,255,.10); }
+  .admin-table-wrap { max-height: 46vh; overflow: auto; border: 1px solid var(--line); border-radius: 12px; scrollbar-width: thin; scrollbar-color: #2c3a4d transparent; }
+  .admin-table-wrap::-webkit-scrollbar { width: 5px; height: 5px; }
+  .admin-table-wrap::-webkit-scrollbar-thumb { background: #2c3a4d; border-radius: 99px; }
+  .admin-table { width: 100%; min-width: 720px; border-collapse: collapse; font-size: 11px; }
+  .admin-table th { position: sticky; top: 0; z-index: 2; padding: 10px; border-bottom: 1px solid var(--line-strong); background: #111721; color: var(--text-muted); text-align: left; font-size: 8px; font-weight: 800; letter-spacing: .95px; text-transform: uppercase; white-space: nowrap; }
+  .admin-table td { padding: 10px; border-bottom: 1px solid var(--line); color: var(--text-soft); vertical-align: middle; white-space: nowrap; }
+  .admin-table tr:last-child td { border-bottom: 0; }
+  .admin-table tr:hover td { background: rgba(255,255,255,.018); }
+  .admin-user { display: flex; align-items: center; gap: 9px; }
+  .admin-avatar { width: 28px; height: 28px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; color: #fff; background: linear-gradient(135deg, #4d9dff, #6c63f6); font-size: 10px; font-weight: 800; text-transform: uppercase; }
+  .admin-user-name { color: var(--text); font-size: 11px; font-weight: 700; }
+  .admin-user-sub { color: var(--text-muted); font-size: 9px; }
+  .admin-self { margin-left: 4px; color: var(--purple); font-size: 8px; font-weight: 800; letter-spacing: .6px; }
+  .admin-actions { display: flex; gap: 5px; justify-content: flex-end; }
+  .admin-btn { padding: 5px 8px; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface-2); color: var(--text-soft); cursor: pointer; font-family: inherit; font-size: 9px; font-weight: 750; white-space: nowrap; transition: border-color .16s ease, color .16s ease, background .16s ease; }
+  .admin-btn:hover:not(:disabled) { border-color: #35465e; color: var(--text); background: var(--surface-3); }
+  .admin-btn.danger:hover:not(:disabled) { border-color: rgba(255,91,110,.4); color: var(--red); background: var(--red-soft); }
+  .admin-btn:disabled { opacity: .35; cursor: not-allowed; }
+  .admin-empty { padding: 34px 18px !important; color: var(--text-muted) !important; text-align: center; font-family: Inter, sans-serif; white-space: normal; }
+
+  @media (max-width: 760px) {
+    .admin-stats { grid-template-columns: repeat(2, 1fr); }
+    .modal-overlay { padding: 12px; }
+    .modal-body { padding: 14px; }
+    .admin-actions { flex-wrap: wrap; }
+  }
+
+  /* TOAST */
+  .toast-container { position: fixed; top: 82px; right: 20px; z-index: 250; display: flex; flex-direction: column; gap: 8px; width: min(360px, calc(100vw - 30px)); pointer-events: none; }
+  .toast { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 12px; background: rgba(12,16,23,.98); box-shadow: var(--shadow-lg); pointer-events: auto; animation: toastIn .25s ease both; }
+  @keyframes toastIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+  .toast.bull { border-left: 3px solid var(--green); }
+  .toast.bear { border-left: 3px solid var(--red); }
+  .toast.smc { border-left: 3px solid var(--amber); }
+  .toast-icon { width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 8px; background: var(--surface-2); font-size: 13px; }
+  .toast.bull .toast-icon { color: var(--green); background: var(--green-soft); }
+  .toast.bear .toast-icon { color: var(--red); background: var(--red-soft); }
+  .toast.smc .toast-icon { color: var(--amber); background: var(--amber-soft); }
+  .toast-body { min-width: 0; flex: 1; }
+  .toast-title { margin-bottom: 2px; color: var(--text); font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+  .toast.bull .toast-title { color: var(--green); }
+  .toast.bear .toast-title { color: var(--red); }
+  .toast.smc .toast-title { color: var(--amber); }
+  .toast-message { margin-bottom: 4px; color: var(--text); font-size: 10px; font-weight: 600; }
+  .toast-detail { color: var(--text-muted); font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 8px; line-height: 1.55; }
+  .toast-close { border: 0; color: var(--text-faint); background: transparent; cursor: pointer; font-size: 16px; line-height: 1; }
+  .toast-close:hover { color: var(--text); }
+
+  .footer { max-width: 1500px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 18px 22px 26px; margin: 0 auto; border-top: 1px solid var(--line); color: var(--text-faint); font-size: 9px; }
+  .footer strong { color: var(--text-muted); }
+  .app { display: none; }
+  .app.visible { display: block; }
+
+  @media (max-width: 1100px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; max-height: none; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+    .sidebar > .panel:last-child { grid-column: 1 / -1; }
+    .stats-row { grid-template-columns: repeat(3,1fr); }
+  }
+  @media (max-width: 760px) {
+    .topbar-inner { padding: 9px 14px; }
+    .status-cluster { gap: 6px; }
+    .clock { display: none; }
+    .user-name { display: none; }
+    .reconnect-btn span { display: none; }
+    .main { padding: 15px; }
+    .tabs { margin-bottom: 14px; }
+    .tab { padding: 8px 11px; }
+    .tab-hint { display: none; }
+    .signal-card { min-height: 225px; padding: 24px 18px; }
+    .signal-main { font-size: 58px; }
+    .trade-plan { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2,1fr); }
+    .chart-header { flex-wrap: wrap; }
+    .chart-legend-inline { order: 3; width: 100%; }
+    .chart-meta { margin-left: auto; }
+    canvas { height: 250px !important; }
+    .sidebar { grid-template-columns: 1fr; }
+    .sidebar > .panel:last-child { grid-column: auto; }
+    .footer { padding: 16px 15px 22px; }
+    .toast-container { left: 15px; right: 15px; top: 74px; width: auto; }
+  }
+  @media (max-width: 480px) {
+    .brand-sub { display: none; }
+    .notif-btn span:last-child { display: none; }
+    .connection-pill { padding-right: 8px; padding-left: 8px; }
+    .connection-pill span:last-child { display: none; }
+    .signal-main { font-size: 48px; letter-spacing: -2px; }
+    .signal-price-value { font-size: 22px; }
+    .stats-row { grid-template-columns: repeat(2,1fr); }
+    .history-panel { padding: 12px; }
+    .insight-card { align-items: flex-start; }
+    .history-filters { gap: 5px; }
+    .export-btn { width: 100%; justify-content: center; margin-left: 0; }
+  }
+</style>
+
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-brand-mark">D</div>
+      <div class="auth-brand-text">
+        <div class="auth-brand-title">Deriv Terminal</div>
+        <div class="auth-brand-sub">Live Signal Engine</div>
+      </div>
+    </div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="authTabLogin">Sign In</button>
+      <button class="auth-tab" id="authTabSignup">Create Account</button>
+    </div>
+
+    <form class="auth-form" id="loginForm" autocomplete="off">
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-field">
+        <label class="auth-field-label">Email or Username</label>
+        <input type="text" class="auth-input" id="loginIdentifier" autocomplete="username" required>
+      </div>
+      <div class="auth-field">
+        <label class="auth-field-label">Password</label>
+        <input type="password" class="auth-input" id="loginPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="auth-submit">Sign In</button>
+      <div class="auth-hint">Don't have an account? Click <strong>Create Account</strong> above.</div>
+    </form>
+
+    <form class="auth-form hidden" id="signupForm" autocomplete="off">
+      <div class="auth-error" id="signupError"></div>
+      <div class="auth-field">
+        <label class="auth-field-label">Full Name</label>
+        <input type="text" class="auth-input" id="signupName" autocomplete="name" required>
+      </div>
+      <div class="auth-field">
+        <label class="auth-field-label">Email</label>
+        <input type="email" class="auth-input" id="signupEmail" autocomplete="email" required>
+      </div>
+      <div class="auth-field">
+        <label class="auth-field-label">Username</label>
+        <input type="text" class="auth-input" id="signupUsername" autocomplete="username" required>
+      </div>
+      <div class="auth-field">
+        <label class="auth-field-label">Password</label>
+        <input type="password" class="auth-input" id="signupPassword" autocomplete="new-password" required>
+      </div>
+      <div class="auth-field">
+        <label class="auth-field-label">Confirm Password</label>
+        <input type="password" class="auth-input" id="signupConfirm" autocomplete="new-password" required>
+      </div>
+      <button type="submit" class="auth-submit">Create Account</button>
+      <div class="auth-hint">By creating an account you agree to use this tool for educational purposes only.</div>
+    </form>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">D</div>
+      <div>
+        <div class="brand-text">Deriv Terminal</div>
+        <div class="brand-sub">Live Signal Engine</div>
+      </div>
+    </div>
+    <div class="status-cluster">
+      <button class="notif-btn" id="notifHeaderBtn" title="Notification settings">
+        <span class="icon">🔔</span>
+        <span id="notifHeaderText">Notifications Off</span>
+      </button>
+      <div class="clock mono" id="clock">--:--:--</div>
+      <button class="reconnect-btn" id="reconnectBtn" title="Reconnect to Deriv market data">↻ <span>Reconnect</span></button>
+      <div class="connection-pill off" id="connectionPill">
+        <span class="pulse-dot"></span>
+        <span id="connectionText">Connecting</span>
+      </div>
+      <div class="user-chip" id="userChip">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div class="user-name" id="userName">user</div>
+        <span class="role-badge user" id="roleBadge">User</span>
+        <div class="user-menu" id="userMenu">
+          <div class="user-menu-info">
+            <div class="user-menu-name" id="menuName">User Name</div>
+            <div class="user-menu-email" id="menuEmail">user@example.com</div>
+            <div class="user-menu-email" id="menuRole" style="margin-top:6px;font-weight:700;">STANDARD ACCOUNT</div>
+          </div>
+          <div class="user-menu-item" id="menuAdminPanel" style="display:none;"><span>⚙</span><span>Admin Panel</span><span class="menu-count" id="adminUserCount">0</span></div>
+          <div class="user-menu-item" id="menuSignOut"><span>↩</span><span>Sign Out</span></div>
+          <div class="user-menu-item danger" id="menuDeleteAccount"><span>✕</span><span>Delete Account</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <div class="layout">
+    <div>
+      <!-- TABS -->
+      <div class="tabs">
+        <button class="tab active" data-mode="regular" id="tabRegular">
+          <span class="tab-icon regular">◆</span>
+          <span>Liquidity Sweep</span>
+          <span class="tab-badge regular" id="badgeRegular">0</span>
+        </button>
+        <button class="tab" data-mode="inverted" id="tabInverted">
+          <span class="tab-icon inverted">◇</span>
+          <span>Inverted Liq Sweep</span>
+          <span class="tab-badge inverted" id="badgeInverted">0</span>
+        </button>
+        <button class="tab" data-mode="smc" id="tabSMC">
+          <span class="tab-icon smc">◈</span>
+          <span>Smart Money Concepts</span>
+          <span class="tab-badge smc" id="badgeSMC">0</span>
+        </button>
+        <button class="tab" data-mode="trendline" id="tabTrendline">
+          <span class="tab-icon trendline">╱</span>
+          <span>Trendline Pattern</span>
+          <span class="tab-badge trendline" id="badgeTrendline">0</span>
+        </button>
+        <button class="tab" data-mode="patterns" id="tabPatterns">
+          <span class="tab-icon patterns">✦</span>
+          <span>Pattern Scanner</span>
+          <span class="tab-badge patterns" id="badgePatterns">0</span>
+        </button>
+        <span class="tab-hint" id="tabHint">Sweep → reversal CHoCH</span>
+      </div>
+
+      <!-- SIGNAL CARD -->
+      <div class="signal-card" id="signalCard">
+        <div class="signal-eyebrow" id="signalEyebrow">Active Signal · Liquidity Sweep</div>
+        <div class="signal-main" id="signalMain">···</div>
+        <div class="signal-desc" id="signalDesc">Establishing connection to Deriv's live market feed...</div>
+        <div class="signal-price-block">
+          <span class="signal-price-label">Live Price</span>
+          <span class="signal-price-value" id="livePrice">—</span>
+        </div>
+      </div>
+
+      <!-- ==================== CHART PATTERN SCANNER ==================== -->
+      <div class="pattern-panel" id="patternPanel" style="display:none;">
+        <div class="pattern-panel-head">
+          <span class="pattern-panel-title">Detected Chart Patterns</span>
+          <span class="pattern-panel-count" id="patternPanelCount">0 patterns</span>
+        </div>
+        <div class="pattern-grid" id="patternGrid"></div>
+        <div class="pattern-library" id="patternLibrary"></div>
+      </div>
+
+      <!-- TRADE PLAN -->
+      <div class="section-head">
+        <span class="section-title" id="planSectionTitle">Trade Plan</span>
+      </div>
+      <div class="trade-plan">
+        <div class="plan-card entry">
+          <div class="plan-head">
+            <span class="plan-label">Entry</span>
+            <span class="plan-tag blue" id="planTagEntry">BUY/SELL @</span>
+          </div>
+          <div class="plan-value" id="planEntry">—</div>
+          <div class="plan-sub" id="planEntrySub">awaiting signal</div>
+        </div>
+        <div class="plan-card sl">
+          <div class="plan-head">
+            <span class="plan-label">Stop Loss</span>
+            <span class="plan-tag red">SL</span>
+          </div>
+          <div class="plan-value" id="planSL">—</div>
+          <div class="plan-sub" id="planSLSub">—</div>
+        </div>
+        <div class="plan-card tp">
+          <div class="plan-head">
+            <span class="plan-label">Take Profit</span>
+            <span class="plan-tag green">TP</span>
+          </div>
+          <div class="plan-value" id="planTP">—</div>
+          <div class="plan-sub">next liquidity pool</div>
+        </div>
+      </div>
+
+      <!-- METRICS -->
+      <div class="section-head">
+        <span class="section-title" id="riskSectionTitle">Risk Profile</span>
+      </div>
+      <div class="metrics">
+        <div class="metric-card"><div class="metric-label">Risk : Reward</div><div class="metric-value dim" id="statRR">—</div></div>
+        <div class="metric-card"><div class="metric-label">Risk</div><div class="metric-value dim" id="statRisk">—</div></div>
+        <div class="metric-card"><div class="metric-label">Reward</div><div class="metric-value dim" id="statReward">—</div></div>
+        <div class="metric-card"><div class="metric-label" id="statBarsLabel">Signal Age</div><div class="metric-value dim" id="statBars">—</div></div>
+      </div>
+
+      <!-- CHART -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span class="chart-title">Price Action</span>
+          <div class="chart-legend-inline">
+            <span><span class="legend-dot bull"></span>Buy signal</span>
+            <span><span class="legend-dot bear"></span>Sell signal</span>
+          </div>
+          <div class="chart-meta">
+            <span id="chartSymbol">—</span>
+            <span id="chartTF">—</span>
+            <span id="lastUpdate">—</span>
+          </div>
+        </div>
+        <canvas id="priceChart"></canvas>
+      </div>
+
+      <!-- ==================== TRADE HISTORY & ACCURACY ==================== -->
+      <div class="section-head">
+        <span class="section-title">Trade History & Accuracy</span>
+      </div>
+      <div class="history-panel">
+        <!-- INSIGHT CARD -->
+        <div class="insight-card" id="insightCard">
+          <div class="insight-icon">💡</div>
+          <div class="insight-body">
+            <div class="insight-title">Best Performing Mode</div>
+            <div class="insight-text" id="insightText">Run a backtest to see which strategy is winning right now.</div>
+          </div>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-box">
+            <div class="stat-box-label">Total</div>
+            <div class="stat-box-value" id="hsTotal">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Wins</div>
+            <div class="stat-box-value win" id="hsWins">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Losses</div>
+            <div class="stat-box-value loss" id="hsLosses">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Win Rate</div>
+            <div class="stat-box-value" id="hsWR">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Total R</div>
+            <div class="stat-box-value" id="hsR">—</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-label">Open</div>
+            <div class="stat-box-value dim" id="hsOpen">0</div>
+          </div>
+        </div>
+
+        <div class="history-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn blue" data-filter="regular">Liquidity Sweep</button>
+          <button class="filter-btn purple" data-filter="inverted">Inverted Sweep</button>
+          <button class="filter-btn amber" data-filter="smc">SMC</button>
+          <button class="filter-btn" data-filter="patterns">Patterns</button>
+          <button class="filter-btn" data-filter="trendline">Trendline</button>
+          <span class="history-count" id="historyCount">0 trades</span>
+          <button class="export-btn" id="exportBtn" title="Download trade history as CSV">
+            <span class="icon">⬇</span>
+            <span>Export CSV</span>
+          </button>
+        </div>
+
+        <div class="trade-table-wrap">
+          <table class="trade-table">
+            <thead>
+              <tr>
+                <th data-sort="time">Time<span class="sort-arrow">▼</span></th>
+                <th data-sort="mode">Mode</th>
+                <th data-sort="direction">Dir</th>
+                <th data-sort="entry">Entry</th>
+                <th data-sort="sl">SL</th>
+                <th data-sort="tp">TP</th>
+                <th data-sort="rr">R:R</th>
+                <th data-sort="bars">Bars</th>
+                <th data-sort="status">Result</th>
+                <th data-sort="r">R</th>
+              </tr>
+            </thead>
+            <tbody id="tradeTableBody">
+              <tr><td colspan="10" class="empty-history">No trades recorded yet</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="panel">
+        <div class="panel-title notif">Notifications</div>
+        <div class="notif-status" id="notifStatus">
+          <span class="icon">🔕</span>
+          <span id="notifStatusText">Browser notifications are not enabled</span>
+        </div>
+        <button class="enable-notif-btn" id="enableNotifBtn">Enable Browser Notifications</button>
+
+        <div class="field-label" style="margin-bottom: 8px;">Alert me when a signal fires:</div>
+        <div class="notif-list">
+          <div class="check-row" data-notif="regular" id="notifRegular">
+            <span class="check-label"><span class="check-dot blue"></span>Liquidity Sweep (regular)</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="inverted" id="notifInverted">
+            <span class="check-label"><span class="check-dot purple"></span>Inverted Liq Sweep</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="smc" id="notifSMC">
+            <span class="check-label"><span class="check-dot amber"></span>Smart Money Concepts</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="trendline" id="notifTrendline">
+            <span class="check-label"><span class="check-dot" style="background: var(--cyan);"></span>Trendline Pattern</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="patterns" id="notifPatterns">
+            <span class="check-label"><span class="check-dot" style="background:#f472b6;"></span>Chart Pattern Scanner</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="bullish" id="notifBullish">
+            <span class="check-label"><span class="check-dot green"></span>Bullish signals only</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="bearish" id="notifBearish">
+            <span class="check-label"><span class="check-dot red"></span>Bearish signals only</span>
+            <span class="check-box"></span>
+          </div>
+          <div class="check-row" data-notif="sound" id="notifSound">
+            <span class="check-label"><span class="check-dot" style="background: var(--amber);"></span>Sound alert</span>
+            <span class="check-box"></span>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top: 14px;">
+          <label class="field-label">Minimum R:R to notify</label>
+          <input type="number" id="notifMinRR" value="1.5" min="0" max="20" step="0.1">
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Configuration</div>
+        <div class="field">
+          <label class="field-label">Instrument</label>
+          <select id="instrument">
+            <optgroup label="Volatility (1s)">
+              <option value="1HZ10V">Volatility 10 (1s)</option>
+              <option value="1HZ25V" selected>Volatility 25 (1s)</option>
+              <option value="1HZ50V">Volatility 50 (1s)</option>
+              <option value="1HZ75V">Volatility 75 (1s)</option>
+              <option value="1HZ100V">Volatility 100 (1s)</option>
+            </optgroup>
+            <optgroup label="Volatility (Standard)">
+              <option value="R_10">Volatility 10</option>
+              <option value="R_25">Volatility 25</option>
+              <option value="R_50">Volatility 50</option>
+              <option value="R_75">Volatility 75</option>
+              <option value="R_100">Volatility 100</option>
+            </optgroup>
+            <optgroup label="Crash / Boom">
+              <option value="BOOM150">Boom 150</option>
+              <option value="BOOM300">Boom 300</option>
+              <option value="BOOM500">Boom 500</option>
+              <option value="BOOM600">Boom 600</option>
+              <option value="BOOM900">Boom 900</option>
+              <option value="BOOM1000">Boom 1000</option>
+              <option value="CRASH150">Crash 150</option>
+              <option value="CRASH300">Crash 300</option>
+              <option value="CRASH500">Crash 500</option>
+              <option value="CRASH600">Crash 600</option>
+              <option value="CRASH900">Crash 900</option>
+              <option value="CRASH1000">Crash 1000</option>
+            </optgroup>
+            <optgroup label="Jump">
+              <option value="JD10">Jump 10</option>
+              <option value="JD25">Jump 25</option>
+              <option value="JD50">Jump 50</option>
+              <option value="JD75">Jump 75</option>
+              <option value="JD100">Jump 100</option>
+            </optgroup>
+            <optgroup label="Step">
+              <option value="STEP_100">Step Index</option>
+              <option value="STEP_200">Step Index 200</option>
+              <option value="STEP_500">Step Index 500</option>
+            </optgroup>
+            <optgroup label="Range Break">
+              <option value="RB_100">Range Break 100</option>
+              <option value="RB_200">Range Break 200</option>
+            </optgroup>
+            <optgroup label="DEX">
+              <option value="DEX_600UP">DEX 600 UP</option>
+              <option value="DEX_600DN">DEX 600 DOWN</option>
+              <option value="DEX_900UP">DEX 900 UP</option>
+              <option value="DEX_900DN">DEX 900 DOWN</option>
+            </optgroup>
+            <optgroup label="Drift / Hybrid / Skew">
+              <option value="DRIFT_SWITCH_20">Drift Switch 20</option>
+              <option value="DRIFT_SWITCH_30">Drift Switch 30</option>
+              <option value="HYBRID_20">Hybrid 20</option>
+              <option value="HYBRID_50">Hybrid 50</option>
+              <option value="HYBRID_100">Hybrid 100</option>
+              <option value="SKEW_STEP_UP">Skew Step Up</option>
+              <option value="SKEW_STEP_DOWN">Skew Step Down</option>
+            </optgroup>
+            <optgroup label="Daily Reset">
+              <option value="BULL_MARKET">Bull Market</option>
+              <option value="BEAR_MARKET">Bear Market</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Timeframe</label>
+          <select id="granularity">
+            <option value="60">1 minute</option>
+            <option value="300">5 minutes</option>
+            <option value="900">15 minutes</option>
+            <option value="3600">1 hour</option>
+            <option value="14400" selected>4 hours</option>
+            <option value="86400">1 day</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Swing Lookback</label>
+          <input type="number" id="swingLookback" value="3" min="1" max="10">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Signal Validity (bars)</label>
+          <input type="number" id="signalValidity" value="15" min="1" max="100">
+        </div>
+
+        <div class="field">
+          <label class="field-label">SMC Zone Tolerance (%)</label>
+          <input type="number" id="smcTolerance" value="0.15" min="0.01" max="2" step="0.01">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Trendline Touch Tolerance (%)</label>
+          <input type="number" id="trendlineTolerance" value="0.20" min="0.03" max="1.5" step="0.01">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Trendline Retest Window (bars)</label>
+          <input type="number" id="trendlineRetestBars" value="12" min="2" max="40">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Pattern Scanner Lookback (bars)</label>
+          <input type="number" id="patternLookback" value="60" min="25" max="140">
+        </div>
+
+        <div class="field">
+          <label class="field-label">Pattern Tolerance (%)</label>
+          <input type="number" id="patternTolerance" value="0.35" min="0.05" max="2" step="0.05">
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">Recent Events</div>
+        <div class="event-log" id="eventLog">
+          <div class="empty-state">Waiting for market events...</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <div><strong>Deriv Terminal</strong> · Live Signal Engine v1.7</div>
+    <div>Educational tool only. Not financial advice.</div>
+  </footer>
+</main>
+
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ADMIN PANEL -->
+<div class="modal-overlay" id="adminModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="Account management">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Account Management</div>
+        <div class="modal-sub">All accounts registered on this device. Admin accounts are protected from deletion — demote first, then delete.</div>
+      </div>
+      <button class="modal-close" id="adminModalClose" aria-label="Close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="admin-stats">
+        <div class="admin-stat"><div class="admin-stat-label">Total Accounts</div><div class="admin-stat-value" id="adminStatTotal">0</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">Admins</div><div class="admin-stat-value" id="adminStatAdmins">0</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">Standard</div><div class="admin-stat-value" id="adminStatStandard">0</div></div>
+        <div class="admin-stat"><div class="admin-stat-label">New (7d)</div><div class="admin-stat-value" id="adminStatNew">0</div></div>
+      </div>
+      <div class="admin-toolbar">
+        <input type="text" class="admin-search" id="adminSearch" placeholder="Search by name, username or email…">
+        <button class="export-btn" id="adminExportUsers"><span class="icon">⬇</span><span>Export Accounts</span></button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Account</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Created</th>
+              <th style="text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   AUTH
+   ============================================================ */
+const USERS_KEY = 'deriv_terminal_users';
+const SESSION_KEY = 'deriv_terminal_session';
+
+/* ============================================================
+   ADMIN CREDENTIALS
+   ------------------------------------------------------------
+     Username : MacDog      (login is case-insensitive)
+     Password : 162716
+   The password is hashed with SHA-256 at runtime, so there is
+   no hard-coded hash to keep in sync.
+   ============================================================ */
+const ADMIN_USERNAME = 'macdog';                 // storage key (lower-case)
+const ADMIN_DISPLAY_NAME = 'MacDog';             // shown in the UI
+const ADMIN_EMAIL = 'macdog@derivterminal.local';
+const ADMIN_PASSWORD = '162716';
+const LEGACY_ADMIN_EMAILS = ['admin@derivterminal.local'];
+
+async function hashPassword(password) {
+  const enc = new TextEncoder();
+  const data = enc.encode(password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function ensureAdminAccount() {
+  const users = loadUsers();
+
+  // Clean up any account left over from the old hard-coded admin.
+  for (const key of Object.keys(users)) {
+    const u = users[key];
+    if (key === 'admin' && LEGACY_ADMIN_EMAILS.includes(u.email)) delete users[key];
+  }
+
+  const passwordHash = await hashPassword(ADMIN_PASSWORD);
+  const defaultPrefs = {
+    instrument: '1HZ25V', granularity: 14400,
+    swingLookback: 3, signalValidity: 15, smcTolerance: 0.15,
+    trendlineTolerance: 0.20, trendlineRetestBars: 12,
+    patternLookback: 60, patternTolerance: 0.35,
+    notif: { regular: true, inverted: true, smc: true, trendline: true, patterns: true, bullish: true, bearish: true, sound: true, minRR: 1.5 }
+  };
+
+  const existing = users[ADMIN_USERNAME];
+  if (!existing) {
+    users[ADMIN_USERNAME] = {
+      name: ADMIN_DISPLAY_NAME,
+      email: ADMIN_EMAIL,
+      username: ADMIN_USERNAME,
+      passwordHash,
+      role: 'admin',
+      createdAt: Date.now(),
+      prefs: defaultPrefs
+    };
+  } else {
+    existing.role = 'admin';
+    existing.name = ADMIN_DISPLAY_NAME;
+    existing.email = ADMIN_EMAIL;
+    existing.username = ADMIN_USERNAME;
+    existing.passwordHash = passwordHash;        // always matches ADMIN_PASSWORD
+    if (!existing.prefs) existing.prefs = defaultPrefs;
+    if (!existing.createdAt) existing.createdAt = Date.now();
+  }
+  saveUsers(users);
+}
+
+function loadUsers() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); } catch { return {}; } }
+function saveUsers(users) { try { localStorage.setItem(USERS_KEY, JSON.stringify(users)); } catch (e) {} }
+function setSession(username) { localStorage.setItem(SESSION_KEY, JSON.stringify({ username, at: Date.now() })); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+function getSession() {
+  try {
+    const s = localStorage.getItem(SESSION_KEY);
+    if (!s) return null;
+    const parsed = JSON.parse(s);
+    return parsed && parsed.username ? parsed : null;
+  } catch { return null; }
+}
+function showAuthError(el, msg) { el.textContent = msg; el.classList.add('show'); }
+function clearAuthError(el) { el.textContent = ''; el.classList.remove('show'); }
+
+const authScreen = document.getElementById('authScreen');
+const loginForm = document.getElementById('loginForm');
+const signupForm = document.getElementById('signupForm');
+const loginError = document.getElementById('loginError');
+const signupError = document.getElementById('signupError');
+const authTabLogin = document.getElementById('authTabLogin');
+const authTabSignup = document.getElementById('authTabSignup');
+
+function showLogin() {
+  authTabLogin.classList.add('active');
+  authTabSignup.classList.remove('active');
+  loginForm.classList.remove('hidden');
+  signupForm.classList.add('hidden');
+  clearAuthError(loginError);
+  clearAuthError(signupError);
+}
+function showSignup() {
+  authTabSignup.classList.add('active');
+  authTabLogin.classList.remove('active');
+  signupForm.classList.remove('hidden');
+  loginForm.classList.add('hidden');
+  clearAuthError(loginError);
+  clearAuthError(signupError);
+}
+authTabLogin.addEventListener('click', showLogin);
+authTabSignup.addEventListener('click', showSignup);
+
+signupForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAuthError(signupError);
+  const name = document.getElementById('signupName').value.trim();
+  const email = document.getElementById('signupEmail').value.trim().toLowerCase();
+  const username = document.getElementById('signupUsername').value.trim().toLowerCase();
+  const password = document.getElementById('signupPassword').value;
+  const confirm = document.getElementById('signupConfirm').value;
+
+  if (!name || name.length < 2) return showAuthError(signupError, 'Please enter your full name.');
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showAuthError(signupError, 'Please enter a valid email address.');
+  if (!username || !/^[a-z0-9_]{3,20}$/.test(username)) return showAuthError(signupError, 'Username must be 3–20 chars, letters/numbers/underscores only.');
+  if (password.length < 6) return showAuthError(signupError, 'Password must be at least 6 characters.');
+  if (password !== confirm) return showAuthError(signupError, 'Passwords do not match.');
+
+  const users = loadUsers();
+  if (users[username]) return showAuthError(signupError, 'That username is already taken.');
+  if (Object.values(users).some(u => u.email === email)) return showAuthError(signupError, 'An account with that email already exists.');
+
+  const passwordHash = await hashPassword(password);
+  users[username] = {
+    name, email, username, passwordHash, role: 'user', createdAt: Date.now(),
+    prefs: {
+      instrument: '1HZ25V', granularity: 14400,
+      swingLookback: 3, signalValidity: 15, smcTolerance: 0.15, trendlineTolerance: 0.20, trendlineRetestBars: 12,
+      notif: { regular: true, inverted: true, smc: true, trendline: true, patterns: true, bullish: true, bearish: true, sound: true, minRR: 1.5 }
+    }
+  };
+  saveUsers(users);
+  setSession(username);
+  unlockApp(username);
+});
+
+loginForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearAuthError(loginError);
+  const identifier = document.getElementById('loginIdentifier').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  if (!identifier) return showAuthError(loginError, 'Please enter your email or username.');
+  if (!password) return showAuthError(loginError, 'Please enter your password.');
+
+  const users = loadUsers();
+  let user = users[identifier];
+  if (!user) user = Object.values(users).find(u => u.email === identifier);
+  if (!user) return showAuthError(loginError, 'No account found with that username or email.');
+
+  const hash = await hashPassword(password);
+  if (hash !== user.passwordHash) return showAuthError(loginError, 'Incorrect password.');
+
+  setSession(user.username);
+  unlockApp(user.username);
+});
+
+const app = document.getElementById('app');
+const userAvatar = document.getElementById('userAvatar');
+const userName = document.getElementById('userName');
+const menuName = document.getElementById('menuName');
+const menuEmail = document.getElementById('menuEmail');
+const roleBadge = document.getElementById('roleBadge');
+const menuRole = document.getElementById('menuRole');
+const userChip = document.getElementById('userChip');
+const userMenu = document.getElementById('userMenu');
+
+let currentUser = null;
+
+function unlockApp(username) {
+  const users = loadUsers();
+  const user = users[username];
+  if (!user) { clearSession(); return; }
+  currentUser = user;
+  const initials = (user.name || user.username).trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+  userAvatar.textContent = initials || 'U';
+  userName.textContent = user.role === 'admin' ? (user.name || user.username) : user.username;
+  menuName.textContent = user.name;
+  menuEmail.textContent = user.email;
+  const isAdmin = user.role === 'admin';
+  roleBadge.classList.toggle('user', !isAdmin);
+  roleBadge.textContent = isAdmin ? 'Admin' : 'User';
+  menuRole.textContent = isAdmin ? 'ADMIN ACCOUNT' : 'STANDARD ACCOUNT';
+  menuRole.style.color = isAdmin ? 'var(--purple)' : 'var(--text-2)';
+
+  // Admin-only menu entries
+  const adminMenuItem = document.getElementById('menuAdminPanel');
+  const deleteMenuItem = document.getElementById('menuDeleteAccount');
+  if (adminMenuItem) adminMenuItem.style.display = isAdmin ? 'flex' : 'none';
+  if (deleteMenuItem) deleteMenuItem.style.display = isAdmin ? 'none' : 'flex';
+  if (isAdmin) updateAdminCount();
+
+  authScreen.classList.add('hidden');
+  app.classList.add('visible');
+  applyUserPrefs(user);
+  start();
+}
+
+function applyUserPrefs(user) {
+  const p = user.prefs;
+  if (!p) return;
+  if (p.patternLookback == null) p.patternLookback = 60;
+  if (p.patternTolerance == null) p.patternTolerance = 0.35;
+  if (p.notif && p.notif.patterns == null) p.notif.patterns = true;
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+  setVal('instrument', p.instrument);
+  setVal('granularity', p.granularity);
+  setVal('swingLookback', p.swingLookback);
+  setVal('signalValidity', p.signalValidity);
+  setVal('smcTolerance', p.smcTolerance);
+  setVal('trendlineTolerance', p.trendlineTolerance);
+  setVal('trendlineRetestBars', p.trendlineRetestBars);
+  setVal('patternLookback', p.patternLookback);
+  setVal('patternTolerance', p.patternTolerance);
+  if (p.notif) { Object.assign(notifPrefs, p.notif); syncCheckRows(); }
+}
+
+function saveUserPrefs() {
+  if (!currentUser) return;
+  const users = loadUsers();
+  if (!users[currentUser.username]) return;
+  users[currentUser.username].prefs = {
+    instrument: document.getElementById('instrument').value,
+    granularity: parseInt(document.getElementById('granularity').value),
+    swingLookback: parseInt(document.getElementById('swingLookback').value),
+    signalValidity: parseInt(document.getElementById('signalValidity').value),
+    smcTolerance: parseFloat(document.getElementById('smcTolerance').value),
+    trendlineTolerance: parseFloat(document.getElementById('trendlineTolerance').value),
+    trendlineRetestBars: parseInt(document.getElementById('trendlineRetestBars').value),
+    patternLookback: parseInt(document.getElementById('patternLookback').value),
+    patternTolerance: parseFloat(document.getElementById('patternTolerance').value),
+    notif: { ...notifPrefs }
+  };
+  saveUsers(users);
+  currentUser = users[currentUser.username];
+}
+
+function lockApp() {
+  if (socket) { try { socket.close(); } catch(e){} socket = null; }
+  currentUser = null;
+  app.classList.remove('visible');
+  authScreen.classList.remove('hidden');
+  userMenu.classList.remove('open');
+  loginForm.reset();
+  signupForm.reset();
+  showLogin();
+}
+
+userChip.addEventListener('click', (e) => {
+  if (e.target.closest('.user-menu')) return;
+  userMenu.classList.toggle('open');
+});
+document.addEventListener('click', (e) => {
+  if (!userChip.contains(e.target)) userMenu.classList.remove('open');
+});
+document.getElementById('menuSignOut').addEventListener('click', () => { clearSession(); lockApp(); });
+document.getElementById('menuDeleteAccount').addEventListener('click', () => {
+  if (!currentUser) return;
+  if (currentUser.role === 'admin') { alert('The admin account is protected from deletion.'); return; }
+  if (!confirm('Delete your account? This will remove your preferences permanently.')) return;
+  const users = loadUsers();
+  delete users[currentUser.username];
+  saveUsers(users);
+  clearSession();
+  lockApp();
+});
+
+(async function initAuth() {
+  try { await ensureAdminAccount(); } catch (e) { console.error('Admin bootstrap failed', e); }
+  const session = getSession();
+  if (!session) { authScreen.classList.remove('hidden'); app.classList.remove('visible'); return; }
+  const users = loadUsers();
+  if (!users[session.username]) { clearSession(); authScreen.classList.remove('hidden'); app.classList.remove('visible'); return; }
+  unlockApp(session.username);
+})();
+
+/* ============================================================
+   ADMIN PANEL · ACCOUNT MANAGEMENT
+   ============================================================ */
+const adminModal = document.getElementById('adminModal');
+const adminModalClose = document.getElementById('adminModalClose');
+const adminSearchInput = document.getElementById('adminSearch');
+const adminTableBody = document.getElementById('adminTableBody');
+const adminStatTotal = document.getElementById('adminStatTotal');
+const adminStatAdmins = document.getElementById('adminStatAdmins');
+const adminStatStandard = document.getElementById('adminStatStandard');
+const adminStatNew = document.getElementById('adminStatNew');
+const menuAdminPanel = document.getElementById('menuAdminPanel');
+
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function updateAdminCount() {
+  const el = document.getElementById('adminUserCount');
+  if (!el) return;
+  el.textContent = Object.keys(loadUsers()).length;
+}
+
+function openAdminPanel() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  userMenu.classList.remove('open');
+  adminSearchInput.value = '';
+  renderAdminPanel();
+  adminModal.classList.add('open');
+}
+function closeAdminPanel() { adminModal.classList.remove('open'); }
+
+function renderAdminPanel() {
+  if (!currentUser || currentUser.role !== 'admin') return;
+  const users = Object.values(loadUsers());
+  users.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  adminStatTotal.textContent = users.length;
+  adminStatAdmins.textContent = users.filter(u => u.role === 'admin').length;
+  adminStatStandard.textContent = users.filter(u => u.role !== 'admin').length;
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  adminStatNew.textContent = users.filter(u => (u.createdAt || 0) >= weekAgo).length;
+
+  const q = (adminSearchInput.value || '').trim().toLowerCase();
+  const list = q ? users.filter(u =>
+    (u.name || '').toLowerCase().includes(q) ||
+    (u.username || '').toLowerCase().includes(q) ||
+    (u.email || '').toLowerCase().includes(q)
+  ) : users;
+
+  updateAdminCount();
+
+  if (!list.length) {
+    adminTableBody.innerHTML = `<tr><td colspan="5" class="admin-empty">${users.length ? 'No accounts match your search.' : 'No accounts registered yet.'}</td></tr>`;
+    return;
+  }
+
+  adminTableBody.innerHTML = list.map(u => {
+    const isSelf = currentUser && u.username === currentUser.username;
+    const isAdmin = u.role === 'admin';
+    const initials = (u.name || u.username || '?').trim().split(/\s+/).map(s => s[0]).slice(0, 2).join('').toUpperCase();
+    const created = u.createdAt
+      ? new Date(u.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '—';
+    const safeUser = escapeHtml(u.username);
+    return `<tr>
+      <td>
+        <div class="admin-user">
+          <div class="admin-avatar">${escapeHtml(initials)}</div>
+          <div>
+            <div class="admin-user-name">${escapeHtml(u.name || u.username)}${isSelf ? '<span class="admin-self">YOU</span>' : ''}</div>
+            <div class="admin-user-sub">@${safeUser}</div>
+          </div>
+        </div>
+      </td>
+      <td>${escapeHtml(u.email || '—')}</td>
+      <td><span class="role-badge ${isAdmin ? '' : 'user'}">${isAdmin ? 'Admin' : 'User'}</span></td>
+      <td class="mono">${created}</td>
+      <td>
+        <div class="admin-actions">
+          <button class="admin-btn" data-action="reset" data-user="${safeUser}">Reset PW</button>
+          <button class="admin-btn" data-action="role" data-user="${safeUser}" ${isSelf ? 'disabled title="You cannot change your own role"' : ''}>${isAdmin ? 'Demote' : 'Promote'}</button>
+          <button class="admin-btn danger" data-action="delete" data-user="${safeUser}" ${isAdmin ? 'disabled title="Admin accounts are protected — demote first"' : ''}>Delete</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function adminResetPassword(username) {
+  const users = loadUsers();
+  const u = users[username];
+  if (!u) return;
+  const pwd = prompt(`Enter a new password for @${username} (minimum 6 characters):`);
+  if (pwd === null) return;
+  if (pwd.length < 6) { alert('Password must be at least 6 characters.'); return; }
+  u.passwordHash = await hashPassword(pwd);
+  saveUsers(users);
+  if (currentUser && currentUser.username === username) currentUser = users[username];
+  alert(`Password updated for @${username}.`);
+}
+
+function adminToggleRole(username) {
+  const users = loadUsers();
+  const u = users[username];
+  if (!u) return;
+  if (currentUser && currentUser.username === username) {
+    alert('You cannot change your own role.');
+    return;
+  }
+  const becomingAdmin = u.role !== 'admin';
+  if (!confirm(`${becomingAdmin ? 'Promote' : 'Demote'} @${username} to ${becomingAdmin ? 'Admin' : 'Standard user'}?`)) return;
+  u.role = becomingAdmin ? 'admin' : 'user';
+  saveUsers(users);
+  renderAdminPanel();
+}
+
+function adminDeleteUser(username) {
+  const users = loadUsers();
+  const u = users[username];
+  if (!u) return;
+  if (u.role === 'admin') {
+    alert('Admin accounts are protected from deletion. Demote the account first.');
+    return;
+  }
+  if (!confirm(`Delete @${username} (${u.email})?\n\nThis permanently removes the account and its saved preferences.`)) return;
+  delete users[username];
+  saveUsers(users);
+  if (currentUser && currentUser.username === username) { clearSession(); lockApp(); }
+  renderAdminPanel();
+}
+
+adminTableBody.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn || btn.disabled) return;
+  const username = btn.dataset.user;
+  const action = btn.dataset.action;
+  if (action === 'delete') adminDeleteUser(username);
+  else if (action === 'role') adminToggleRole(username);
+  else if (action === 'reset') await adminResetPassword(username);
+});
+
+menuAdminPanel.addEventListener('click', openAdminPanel);
+adminModalClose.addEventListener('click', closeAdminPanel);
+adminModal.addEventListener('click', (e) => { if (e.target === adminModal) closeAdminPanel(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && adminModal.classList.contains('open')) closeAdminPanel();
+});
+adminSearchInput.addEventListener('input', renderAdminPanel);
+
+document.getElementById('adminExportUsers').addEventListener('click', () => {
+  const users = Object.values(loadUsers()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  if (!users.length) { alert('No accounts to export.'); return; }
+  const headers = ['Name', 'Username', 'Email', 'Role', 'Created'];
+  const rows = users.map(u => [
+    u.name || '', u.username || '', u.email || '', u.role || 'user',
+    u.createdAt ? new Date(u.createdAt).toISOString() : ''
+  ]);
+  const csv = [headers, ...rows].map(row => row.map(cell => {
+    const s = String(cell);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }).join(',')).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `deriv-accounts-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* ============================================================
+   DETECTION PRIMITIVES
+   ============================================================ */
+function findSwings(highs, lows, lookback) {
+  const n = highs.length;
+  const swingHighs = new Array(n).fill(false);
+  const swingLows = new Array(n).fill(false);
+  for (let i = lookback; i < n - lookback; i++) {
+    let isH = true, isL = true;
+    for (let j = i - lookback; j <= i + lookback; j++) {
+      if (j === i) continue;
+      if (highs[j] >= highs[i]) isH = false;
+      if (lows[j] <= lows[i]) isL = false;
+    }
+    if (isH) swingHighs[i] = true;
+    if (isL) swingLows[i] = true;
+  }
+  return { swingHighs, swingLows };
+}
+
+function detectSweeps(highs, lows, closes, swingHighs, swingLows, lookback) {
+  const n = highs.length;
+  const sweeps = [];
+  let lastHighIdx = null, lastLowIdx = null;
+  const sweptHighs = new Set(), sweptLows = new Set();
+  for (let i = lookback; i < n; i++) {
+    const c = i - lookback;
+    if (c >= 0) {
+      if (swingHighs[c]) lastHighIdx = c;
+      if (swingLows[c]) lastLowIdx = c;
+    }
+    if (lastLowIdx !== null && !sweptLows.has(lastLowIdx)) {
+      const level = lows[lastLowIdx];
+      if (lows[i] < level && closes[i] > level) {
+        sweeps.push({ index: i, type: 'buy-side', level, wick: lows[i] });
+        sweptLows.add(lastLowIdx);
+      }
+    }
+    if (lastHighIdx !== null && !sweptHighs.has(lastHighIdx)) {
+      const level = highs[lastHighIdx];
+      if (highs[i] > level && closes[i] < level) {
+        sweeps.push({ index: i, type: 'sell-side', level, wick: highs[i] });
+        sweptHighs.add(lastHighIdx);
+      }
+    }
+  }
+  return sweeps;
+}
+
+function detectCHoCH(highs, lows, closes, lookback) {
+  const n = highs.length;
+  const { swingHighs, swingLows } = findSwings(highs, lows, lookback);
+  const events = [];
+  let lastHighIdx = null, lastLowIdx = null;
+  let trend = 'neutral';
+  for (let i = lookback; i < n; i++) {
+    const c = i - lookback;
+    if (c >= 0) {
+      if (swingHighs[c]) lastHighIdx = c;
+      if (swingLows[c]) lastLowIdx = c;
+    }
+    if (trend === 'down' && lastHighIdx !== null && closes[i] > highs[lastHighIdx]) {
+      events.push({ index: i, type: 'bullish', brokenLevel: highs[lastHighIdx] });
+      trend = 'up'; lastHighIdx = null;
+    } else if (trend === 'up' && lastLowIdx !== null && closes[i] < lows[lastLowIdx]) {
+      events.push({ index: i, type: 'bearish', brokenLevel: lows[lastLowIdx] });
+      trend = 'down'; lastLowIdx = null;
+    } else if (trend === 'neutral') {
+      if (lastHighIdx !== null && closes[i] > highs[lastHighIdx]) {
+        events.push({ index: i, type: 'bullish', brokenLevel: highs[lastHighIdx] });
+        trend = 'up'; lastHighIdx = null;
+      } else if (lastLowIdx !== null && closes[i] < lows[lastLowIdx]) {
+        events.push({ index: i, type: 'bearish', brokenLevel: lows[lastLowIdx] });
+        trend = 'down'; lastLowIdx = null;
+      }
+    }
+  }
+  return events;
+}
+
+function nextLiquidityTarget(swingHighs, swingLows, highs, lows, entryIdx, direction) {
+  const n = highs.length;
+  if (direction === 'bullish') {
+    for (let i = entryIdx + 1; i < Math.min(n, entryIdx + 80); i++) {
+      if (swingHighs[i]) return { index: i, level: highs[i] };
+    }
+    let maxH = -Infinity;
+    for (let i = entryIdx + 1; i < Math.min(n, entryIdx + 30); i++) {
+      if (highs[i] > maxH) maxH = highs[i];
+    }
+    return maxH > -Infinity ? { level: maxH } : null;
+  } else {
+    for (let i = entryIdx + 1; i < Math.min(n, entryIdx + 80); i++) {
+      if (swingLows[i]) return { index: i, level: lows[i] };
+    }
+    let minL = Infinity;
+    for (let i = entryIdx + 1; i < Math.min(n, entryIdx + 30); i++) {
+      if (lows[i] < minL) minL = lows[i];
+    }
+    return minL < Infinity ? { level: minL } : null;
+  }
+}
+
+function detectSignals(highs, lows, closes, opens, lookback, sweepWindow, mode) {
+  const { swingHighs, swingLows } = findSwings(highs, lows, lookback);
+  const sweeps = detectSweeps(highs, lows, closes, swingHighs, swingLows, lookback);
+  const chochEvents = detectCHoCH(highs, lows, closes, lookback);
+
+  // Regular mode = liquidity sweep followed by reversal CHoCH.
+  if (mode === 'regular') {
+    const signals = [];
+    for (const choch of chochEvents) {
+      let bestSweep = null;
+      for (let s = sweeps.length - 1; s >= 0; s--) {
+        const sw = sweeps[s];
+        if (sw.index >= choch.index) continue;
+        if (choch.index - sw.index > sweepWindow) break;
+
+        const matches =
+          (choch.type === 'bullish' && sw.type === 'buy-side') ||
+          (choch.type === 'bearish' && sw.type === 'sell-side');
+
+        if (matches) { bestSweep = sw; break; }
+      }
+      if (!bestSweep) continue;
+
+      const entry = closes[choch.index];
+      const buffer = Math.max(entry * 0.0005, Number.EPSILON);
+      const sl = choch.type === 'bullish'
+        ? bestSweep.wick - buffer
+        : bestSweep.wick + buffer;
+      const slNote = 'beyond sweep wick';
+
+      const target = nextLiquidityTarget(
+        swingHighs, swingLows, highs, lows, choch.index, choch.type
+      );
+      if (!target) continue;
+
+      const tp = target.level;
+      const risk = Math.abs(entry - sl);
+      const reward = Math.abs(tp - entry);
+      if (!Number.isFinite(risk) || risk <= 0 || !Number.isFinite(reward)) continue;
+
+      signals.push({
+        chochIndex: choch.index,
+        chochType: choch.type,
+        sweepIndex: bestSweep.index,
+        sweepType: bestSweep.type,
+        sweepLevel: bestSweep.level,
+        sweepWick: bestSweep.wick,
+        entry, sl, slNote, tp, risk, reward,
+        rr: reward / risk,
+        mode
+      });
+    }
+    return { signals, sweeps, chochEvents };
+  }
+
+  // Inverted mode is deliberately detected from the sweep itself rather than
+  // pairing it to the regular CHoCH state machine. This makes the inversion
+  // reliable:
+  //   • sweep above a swing high (sell-side label in this engine) + close back
+  //     above that level = bullish continuation => BUY
+  //   • sweep below a swing low (buy-side label in this engine) + close back
+  //     below that level = bearish continuation => SELL
+  const signals = [];
+  const usedSweeps = new Set();
+
+  for (const sw of sweeps) {
+    if (usedSweeps.has(sw.index)) continue;
+
+    const direction = sw.type === 'sell-side' ? 'bullish' : 'bearish';
+    const start = sw.index + 1;
+    const end = Math.min(closes.length - 1, sw.index + Math.max(1, sweepWindow));
+
+    let continuationIndex = -1;
+    for (let i = start; i <= end; i++) {
+      if (direction === 'bullish' && closes[i] > sw.level) {
+        continuationIndex = i;
+        break;
+      }
+      if (direction === 'bearish' && closes[i] < sw.level) {
+        continuationIndex = i;
+        break;
+      }
+    }
+    if (continuationIndex < 0) continue;
+
+    const entry = closes[continuationIndex];
+    const buffer = Math.max(entry * 0.0005, Number.EPSILON);
+
+    // Keep the swept liquidity level as the invalidation anchor, but include
+    // the whole sweep-to-entry range so the stop is structurally meaningful.
+    let sl;
+    let slNote;
+    if (direction === 'bullish') {
+      let localLow = sw.wick;
+      for (let i = sw.index; i <= continuationIndex; i++) {
+        if (lows[i] < localLow) localLow = lows[i];
+      }
+      sl = localLow - buffer;
+      slNote = 'below inverted sweep structure';
+    } else {
+      let localHigh = sw.wick;
+      for (let i = sw.index; i <= continuationIndex; i++) {
+        if (highs[i] > localHigh) localHigh = highs[i];
+      }
+      sl = localHigh + buffer;
+      slNote = 'above inverted sweep structure';
+    }
+
+    const target = nextLiquidityTarget(
+      swingHighs, swingLows, highs, lows, continuationIndex, direction
+    );
+    if (!target) continue;
+
+    const tp = target.level;
+    const risk = Math.abs(entry - sl);
+    const reward = Math.abs(tp - entry);
+    if (!Number.isFinite(risk) || risk <= 0 || !Number.isFinite(reward)) continue;
+
+    signals.push({
+      chochIndex: continuationIndex,
+      chochType: direction,
+      chochReason: 'inverted-continuation',
+      sweepIndex: sw.index,
+      sweepType: sw.type,
+      sweepLevel: sw.level,
+      sweepWick: sw.wick,
+      entry, sl, slNote, tp, risk, reward,
+      rr: reward / risk,
+      mode
+    });
+
+    usedSweeps.add(sw.index);
+  }
+
+  return { signals, sweeps, chochEvents };
+}
+
+
+/* ============================================================
+   TRENDLINE PATTERN
+   3 touches → breakout → opposite-side retest
+   ============================================================ */
+function detectTrendlinePatterns(highs, lows, closes, opens, lookback, tolerancePct = 0.20, retestWindow = 12) {
+  const n = closes.length;
+  const { swingHighs, swingLows } = findSwings(highs, lows, lookback);
+  const highPivots = [], lowPivots = [];
+  for (let i = 0; i < n; i++) {
+    if (swingHighs[i]) highPivots.push({ index: i, price: highs[i] });
+    if (swingLows[i]) lowPivots.push({ index: i, price: lows[i] });
+  }
+
+  const tol = Math.max(0.0001, tolerancePct / 100);
+  const breakoutTol = tol * 0.75;
+  const minGap = Math.max(2, lookback);
+  const candidates = [];
+
+  const lineAt = (a, b, index) => a.price + ((b.price - a.price) / (b.index - a.index)) * (index - a.index);
+  const near = (price, line) => Math.abs(price - line) <= Math.max(Math.abs(line) * tol, Number.EPSILON);
+
+  function build(pivots, kind) {
+    for (let a = 0; a < pivots.length - 2; a++) {
+      const p1 = pivots[a];
+      for (let b = a + 1; b < pivots.length - 1; b++) {
+        const p2 = pivots[b];
+        if (p2.index - p1.index < minGap) continue;
+        const slope = (p2.price - p1.price) / (p2.index - p1.index);
+        if (kind === 'down' && slope >= 0) continue;
+        if (kind === 'up' && slope <= 0) continue;
+
+        const touches = [p1, p2];
+        for (let c = b + 1; c < pivots.length; c++) {
+          const p = pivots[c];
+          if (p.index - touches[touches.length - 1].index < minGap) continue;
+          const lv = lineAt(p1, p2, p.index);
+          if (!near(p.price, lv)) continue;
+          if (kind === 'down' && p.price >= touches[touches.length - 1].price * (1 - tol * 0.25)) continue;
+          if (kind === 'up' && p.price <= touches[touches.length - 1].price * (1 + tol * 0.25)) continue;
+          touches.push(p);
+        }
+        if (touches.length < 3) continue;
+
+        const third = touches[2];
+        let breakoutIndex = -1;
+        for (let i = third.index + 1; i < n; i++) {
+          const lv = lineAt(p1, p2, i);
+          if (kind === 'down' && closes[i] > lv * (1 + breakoutTol)) { breakoutIndex = i; break; }
+          if (kind === 'up' && closes[i] < lv * (1 - breakoutTol)) { breakoutIndex = i; break; }
+        }
+        if (breakoutIndex < 0) continue;
+
+        let retestIndex = -1;
+        const retestEnd = Math.min(n - 1, breakoutIndex + Math.max(2, retestWindow));
+        for (let i = breakoutIndex + 1; i <= retestEnd; i++) {
+          const lv = lineAt(p1, p2, i);
+          if (kind === 'down' && lows[i] <= lv * (1 + tol) && closes[i] > lv) { retestIndex = i; break; }
+          if (kind === 'up' && highs[i] >= lv * (1 - tol) && closes[i] < lv) { retestIndex = i; break; }
+        }
+        if (retestIndex < 0) continue;
+
+        const direction = kind === 'down' ? 'bullish' : 'bearish';
+        const entry = closes[retestIndex];
+        const lv = lineAt(p1, p2, retestIndex);
+        const buffer = Math.max(entry * 0.0005, Number.EPSILON);
+        const sl = direction === 'bullish'
+          ? Math.min(lows[retestIndex], lv) - buffer
+          : Math.max(highs[retestIndex], lv) + buffer;
+        const target = nextLiquidityTarget(swingHighs, swingLows, highs, lows, retestIndex, direction);
+        const risk = Math.abs(entry - sl);
+        if (!Number.isFinite(risk) || risk <= 0) continue;
+        const tp = target ? target.level : (direction === 'bullish' ? entry + 2 * risk : entry - 2 * risk);
+        const reward = Math.abs(tp - entry);
+        if (!Number.isFinite(reward) || reward <= 0) continue;
+
+        candidates.push({
+          mode: 'trendline',
+          patternType: kind === 'down' ? 'downtrend-breakout' : 'uptrend-breakout',
+          direction, chochType: direction, chochReason: 'trendline-retest',
+          chochIndex: retestIndex, breakoutIndex, retestIndex,
+          entry, sl, tp, risk, reward, rr: reward / risk,
+          slNote: direction === 'bullish' ? 'below breakout retest' : 'above breakout retest',
+          touchCount: touches.length, touchIndices: touches.map(t => t.index),
+          startIndex: p1.index, anchorIndex: p2.index, thirdTouchIndex: third.index,
+          anchorA: { index: p1.index, price: p1.price },
+          anchorB: { index: p2.index, price: p2.price },
+          lineAt, lineSlope: slope, targetSource: target ? 'next liquidity' : '2R fallback'
+        });
+      }
+    }
+  }
+
+  build(highPivots, 'down');
+  build(lowPivots, 'up');
+  candidates.sort((a, b) => b.retestIndex - a.retestIndex || b.touchCount - a.touchCount);
+
+  const deduped = [];
+  const seen = new Set();
+  for (const c of candidates) {
+    const key = `${c.patternType}-${c.retestIndex}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(c);
+    if (deduped.length >= 60) break;
+  }
+  deduped.sort((a, b) => a.retestIndex - b.retestIndex);
+  return { signals: deduped, active: null, swingHighs, swingLows, touchCandidates: { highPivots, lowPivots }, sweeps: [], chochEvents: [] };
+}
+
+/* ============================================================
+   CHART PATTERN SCANNER
+   Common continuation + reversal structures.
+   Heuristic detector: geometry is measured from swing structure,
+   then a breakout/retest is used when available.
+   ============================================================ */
+function patternLinReg(values) {
+  const n = values.length;
+  if (n < 3) return { slope: 0, intercept: values[0] || 0, r2: 0 };
+  let sx = 0, sy = 0, sxx = 0, sxy = 0;
+  for (let i = 0; i < n; i++) { sx += i; sy += values[i]; sxx += i*i; sxy += i*values[i]; }
+  const den = n*sxx - sx*sx;
+  const slope = den ? (n*sxy - sx*sy) / den : 0;
+  const intercept = (sy - slope*sx) / n;
+  let ssTot = 0, ssRes = 0;
+  const mean = sy / n;
+  for (let i = 0; i < n; i++) { const pred = intercept + slope*i; ssTot += (values[i]-mean)**2; ssRes += (values[i]-pred)**2; }
+  const r2 = ssTot > 0 ? Math.max(0, 1 - ssRes/ssTot) : 0;
+  return { slope, intercept, r2 };
+}
+
+function patternATR(highs, lows, closes, window = 20) {
+  const n = closes.length;
+  const atrStart = Math.max(1, n - window);
+  let sum = 0, count = 0;
+  for (let i = atrStart; i < n; i++) {
+    const prev = closes[i-1];
+    const tr = Math.max(highs[i]-lows[i], Math.abs(highs[i]-prev), Math.abs(lows[i]-prev));
+    if (Number.isFinite(tr)) { sum += tr; count++; }
+  }
+  return count ? sum/count : Math.max(Math.abs(closes[n-1])*0.002, Number.EPSILON);
+}
+
+function patternPct(a,b) {
+  const den = Math.max(Math.abs(b), Number.EPSILON);
+  return Math.abs(a-b)/den*100;
+}
+
+function makePatternTrade(name, direction, index, entry, sl, tp, stage, confidence, meta = {}) {
+  if (!Number.isFinite(entry) || !Number.isFinite(sl) || !Number.isFinite(tp)) return null;
+  const risk = Math.abs(entry-sl);
+  const reward = Math.abs(tp-entry);
+  if (!(risk > 0) || !(reward > 0)) return null;
+  return {
+    mode: 'patterns', patternName: name, patternType: meta.patternType || name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+    direction, stage, confidence: Math.max(0, Math.min(99, Math.round(confidence))),
+    entry, sl, tp, risk, reward, rr: reward/risk,
+    chochIndex: index, signalIndex: index, entryIndex: index,
+    slNote: meta.slNote || 'pattern invalidation',
+    description: meta.description || `${name} detected on ${stage.toLowerCase()} phase.`,
+    startIndex: meta.startIndex ?? Math.max(0, index-20),
+    endIndex: meta.endIndex ?? index,
+    upper: meta.upper || null,
+    lower: meta.lower || null,
+    points: meta.points || [],
+    breakoutIndex: meta.breakoutIndex ?? -1,
+    retestIndex: meta.retestIndex ?? -1,
+    keyLevel: meta.keyLevel ?? null,
+    category: meta.category || 'Chart Pattern'
+  };
+}
+
+function detectChartPatterns(highs, lows, closes, opens, lookback = 3, tolerancePct = 0.35, maxLookback = 60) {
+  const n = closes.length;
+  if (n < 30) return { patterns: [], active: null, forming: [], names: [] };
+  const { swingHighs, swingLows } = findSwings(highs, lows, Math.max(2, lookback));
+  const highPivots = [], lowPivots = [];
+  for (let i = 0; i < n; i++) {
+    if (swingHighs[i]) highPivots.push({ index:i, price:highs[i] });
+    if (swingLows[i]) lowPivots.push({ index:i, price:lows[i] });
+  }
+
+  const tol = Math.max(0.0005, tolerancePct/100);
+  const atr = patternATR(highs, lows, closes, 20);
+  const windowEnd = n - 1;
+  const patternStart = Math.max(0, n - Math.max(25, Math.min(140, maxLookback)));
+  const sliceClose = closes.slice(patternStart);
+  const sliceHigh = highs.slice(patternStart);
+  const sliceLow = lows.slice(patternStart);
+  const patterns = [];
+  const add = p => { if (p) patterns.push(p); };
+  const avg = a => a.reduce((x,y)=>x+y,0)/(a.length||1);
+  const std = a => { const m=avg(a); return Math.sqrt(avg(a.map(v=>(v-m)**2))); };
+  const touchNear = (price, level) => Math.abs(price-level) <= Math.max(Math.abs(level)*tol, atr*0.35);
+  const lastBreak = (levelFn, direction, from) => {
+    for (let i=Math.max(from,patternStart+2); i<n; i++) {
+      const lv=levelFn(i);
+      if (direction==='bullish' && closes[i]>lv && closes[i-1]<=levelFn(i-1)) return i;
+      if (direction==='bearish' && closes[i]<lv && closes[i-1]>=levelFn(i-1)) return i;
+    }
+    return -1;
+  };
+
+  // ---- Recent impulse / consolidation ----
+  const formLen = Math.min(30, Math.max(14, Math.floor((n-patternStart)*0.45)));
+  const impStart = Math.max(patternStart, windowEnd - formLen*2);
+  const consStart = Math.min(windowEnd-6, impStart + Math.floor((windowEnd-impStart)*0.52));
+  const consEnd = windowEnd;
+  const impulseMove = closes[Math.max(consStart-1,impStart)] - closes[impStart];
+  const impulseAbs = Math.abs(impulseMove);
+  const impulseStrong = impulseAbs >= atr*2.5;
+  if (consEnd-consStart >= 7 && impulseStrong) {
+    const hs = highs.slice(consStart, consEnd+1), ls = lows.slice(consStart, consEnd+1);
+    const hu = patternLinReg(hs), lo = patternLinReg(ls);
+    const parallel = Math.abs(hu.slope-lo.slope) <= Math.max(atr*0.10, Math.abs(hu.slope)*0.6, Math.abs(lo.slope)*0.6);
+    const conv = hu.slope < 0 && lo.slope > 0;
+    const avgWidth = avg(hs.map((v,i)=>v-ls[i]));
+    const widthStart = avg(hs.slice(0,Math.max(3,Math.floor(hs.length*.4))).map((v,i)=>v-ls[i]));
+    const widthEnd = avg(hs.slice(Math.floor(hs.length*.6)).map((v,i)=>v-ls[Math.floor(hs.length*.6)+i]));
+    const upperFn = i => hu.intercept + hu.slope*(i-consStart);
+    const lowerFn = i => lo.intercept + lo.slope*(i-consStart);
+    const bullBreak = lastBreak(upperFn,'bullish',consStart);
+    const bearBreak = lastBreak(lowerFn,'bearish',consStart);
+    const bull = impulseMove > 0;
+    const bear = impulseMove < 0;
+    const span = Math.max(...hs)-Math.min(...ls);
+    const targetBull = bullBreak>=0 ? closes[bullBreak] + span : closes[n-1] + span;
+    const targetBear = bearBreak>=0 ? closes[bearBreak] - span : closes[n-1] - span;
+    if (bull && hu.slope < 0 && lo.slope < 0 && parallel) {
+      const stage = bullBreak>=0 ? (bullBreak<n-1 && lows.slice(bullBreak+1).some((v,j)=>v<=upperFn(bullBreak+1+j)*(1+tol) && closes[bullBreak+1+j]>upperFn(bullBreak+1+j)) ? 'Retest' : 'Breakout') : 'Forming';
+      const idx = bullBreak>=0 ? bullBreak : n-1;
+      const entry = closes[idx]; const sl = Math.min(...ls)-atr*.2;
+      add(makePatternTrade('Bullish Flag','bullish',idx,entry,sl,targetBull,stage,72+Math.min(18,Math.round(hu.r2*10+lo.r2*10)),{
+        patternType:'bullish-flag', startIndex:impStart, endIndex:idx, upper:{a:{index:consStart,price:hu.intercept},b:{index:consEnd,price:hu.intercept+hu.slope*(consEnd-consStart)}}, lower:{a:{index:consStart,price:lo.intercept},b:{index:consEnd,price:lo.intercept+lo.slope*(consEnd-consStart)}}, category:'Continuation', description:'Strong upward impulse followed by a compact downward-sloping parallel consolidation.', slNote:'below flag low', breakoutIndex:bullBreak
+      }));
+    }
+    if (bear && hu.slope > 0 && lo.slope > 0 && parallel) {
+      const stage = bearBreak>=0 ? 'Breakout' : 'Forming';
+      const idx = bearBreak>=0 ? bearBreak : n-1;
+      const entry=closes[idx]; const sl=Math.max(...hs)+atr*.2;
+      add(makePatternTrade('Bearish Flag','bearish',idx,entry,sl,targetBear,stage,72+Math.min(18,Math.round(hu.r2*10+lo.r2*10)),{
+        patternType:'bearish-flag', startIndex:impStart, endIndex:idx, upper:{a:{index:consStart,price:hu.intercept},b:{index:consEnd,price:hu.intercept+hu.slope*(consEnd-consStart)}}, lower:{a:{index:consStart,price:lo.intercept},b:{index:consEnd,price:lo.intercept+lo.slope*(consEnd-consStart)}}, category:'Continuation', description:'Strong downward impulse followed by a compact upward-sloping parallel consolidation.', slNote:'above flag high', breakoutIndex:bearBreak
+      }));
+    }
+    if (bull && conv) {
+      const stage=bullBreak>=0?'Breakout':'Forming'; const idx=bullBreak>=0?bullBreak:n-1; const entry=closes[idx]; const sl=Math.min(...ls)-atr*.2;
+      add(makePatternTrade('Bullish Pennant','bullish',idx,entry,sl,targetBull,stage,70+Math.min(20,Math.round((hu.r2+lo.r2)*10)),{
+        patternType:'bullish-pennant',startIndex:impStart,endIndex:idx,upper:{a:{index:consStart,price:hu.intercept},b:{index:consEnd,price:hu.intercept+hu.slope*(consEnd-consStart)}},lower:{a:{index:consStart,price:lo.intercept},b:{index:consEnd,price:lo.intercept+lo.slope*(consEnd-consStart)}},category:'Continuation',description:'Strong bullish impulse compressing into converging lower highs and higher lows.',slNote:'below pennant low',breakoutIndex:bullBreak
+      }));
+    }
+    if (bear && conv) {
+      const stage=bearBreak>=0?'Breakout':'Forming'; const idx=bearBreak>=0?bearBreak:n-1; const entry=closes[idx]; const sl=Math.max(...hs)+atr*.2;
+      add(makePatternTrade('Bearish Pennant','bearish',idx,entry,sl,targetBear,stage,70+Math.min(20,Math.round((hu.r2+lo.r2)*10)),{
+        patternType:'bearish-pennant',startIndex:impStart,endIndex:idx,upper:{a:{index:consStart,price:hu.intercept},b:{index:consEnd,price:hu.intercept+hu.slope*(consEnd-consStart)}},lower:{a:{index:consStart,price:lo.intercept},b:{index:consEnd,price:lo.intercept+lo.slope*(consEnd-consStart)}},category:'Continuation',description:'Strong bearish impulse compressing into converging higher lows and lower lows.',slNote:'above pennant high',breakoutIndex:bearBreak
+      }));
+    }
+  }
+
+  // ---- Triangle / wedge / channel families ----
+  const geoStart = Math.max(patternStart, n-42), gH=highs.slice(geoStart), gL=lows.slice(geoStart);
+  const grH=patternLinReg(gH), grL=patternLinReg(gL);
+  const hLast=grH.intercept+grH.slope*(gH.length-1), lLast=grL.intercept+grL.slope*(gL.length-1);
+  const upperFlat=Math.abs(grH.slope)<=atr*0.045, lowerFlat=Math.abs(grL.slope)<=atr*0.045;
+  const converging = (grH.slope < 0 && grL.slope > 0);
+  const risingBoth=grH.slope>0&&grL.slope>0, fallingBoth=grH.slope<0&&grL.slope<0;
+  const spread = Math.max(atr*1.2, Math.abs(hLast-lLast));
+  const bullishBreak=lastBreak(i=>grH.intercept+grH.slope*(i-geoStart),'bullish',geoStart);
+  const bearishBreak=lastBreak(i=>grL.intercept+grL.slope*(i-geoStart),'bearish',geoStart);
+  const triMeasure=spread;
+
+  if (upperFlat && grL.slope>atr*0.03) {
+    const idx=bullishBreak>=0?bullishBreak:n-1, stage=bullishBreak>=0?'Breakout':'Forming', entry=closes[idx], sl=Math.min(...gL)-atr*.2;
+    add(makePatternTrade('Ascending Triangle','bullish',idx,entry,sl,entry+triMeasure,stage,76+Math.round(grH.r2*10),{
+      patternType:'ascending-triangle',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation / Reversal',description:'Flat resistance with rising swing lows creating upward pressure.',slNote:'below triangle base',breakoutIndex:bullishBreak
+    }));
+  }
+  if (lowerFlat && grH.slope<-atr*0.03) {
+    const idx=bearishBreak>=0?bearishBreak:n-1, stage=bearishBreak>=0?'Breakout':'Forming', entry=closes[idx], sl=Math.max(...gH)+atr*.2;
+    add(makePatternTrade('Descending Triangle','bearish',idx,entry,sl,entry-triMeasure,stage,76+Math.round(grL.r2*10),{
+      patternType:'descending-triangle',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation / Reversal',description:'Flat support with falling swing highs creating downward pressure.',slNote:'above triangle base',breakoutIndex:bearishBreak
+    }));
+  }
+  if (converging) {
+    const direction = closes[n-1] > (hLast+lLast)/2 ? 'bullish' : 'bearish';
+    const idx = direction==='bullish' ? (bullishBreak>=0?bullishBreak:n-1) : (bearishBreak>=0?bearishBreak:n-1);
+    const stage = (direction==='bullish'?bullishBreak:bearishBreak)>=0 ? 'Breakout' : 'Forming';
+    const entry=closes[idx], sl=direction==='bullish'?Math.min(...gL)-atr*.2:Math.max(...gH)+atr*.2;
+    add(makePatternTrade('Symmetrical Triangle',direction,idx,entry,sl,direction==='bullish'?entry+triMeasure:entry-triMeasure,stage,74+Math.round((grH.r2+grL.r2)*5),{
+      patternType:'symmetrical-triangle',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation / Reversal',description:'Converging lower highs and higher lows forming a contracting range.',slNote:'beyond triangle boundary',breakoutIndex:direction==='bullish'?bullishBreak:bearishBreak
+    }));
+  }
+  if (risingBoth && grL.slope > grH.slope && patternPct(grL.slope,grH.slope) > 5) {
+    const dir='bearish', idx=bearishBreak>=0?bearishBreak:n-1, entry=closes[idx], sl=Math.max(...gH)+atr*.25;
+    add(makePatternTrade('Rising Wedge','bearish',idx,entry,sl,entry-Math.max(atr*2,spread*.75),bearishBreak>=0?'Breakout':'Forming',78,{
+      patternType:'rising-wedge',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Reversal',description:'Both boundaries rise, but the lower boundary rises faster, compressing price upward.',slNote:'above wedge high',breakoutIndex:bearishBreak
+    }));
+  }
+  if (fallingBoth && grH.slope < grL.slope && patternPct(grH.slope,grL.slope) > 5) {
+    const dir='bullish', idx=bullishBreak>=0?bullishBreak:n-1, entry=closes[idx], sl=Math.min(...gL)-atr*.25;
+    add(makePatternTrade('Falling Wedge','bullish',idx,entry,sl,entry+Math.max(atr*2,spread*.75),bullishBreak>=0?'Breakout':'Forming',78,{
+      patternType:'falling-wedge',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Reversal',description:'Both boundaries fall, but the upper boundary falls faster, compressing price downward.',slNote:'below wedge low',breakoutIndex:bullishBreak
+    }));
+  }
+  if (Math.abs(grH.slope-grL.slope) <= atr*0.06 && (risingBoth || fallingBoth) && grH.r2>.45 && grL.r2>.45) {
+    const dir = risingBoth?'bullish':'bearish', idx=dir==='bullish'?bullishBreak:n-1;
+    add(makePatternTrade(risingBoth?'Ascending Channel':'Descending Channel',dir,idx,closes[idx],dir==='bullish'?Math.min(...gL)-atr*.2:Math.max(...gH)+atr*.2,dir==='bullish'?closes[idx]+spread:closes[idx]-spread,dir==='bullish'&&bullishBreak>=0?'Breakout':'Forming',73,{
+      patternType:risingBoth?'ascending-channel':'descending-channel',startIndex:geoStart,endIndex:idx,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation',description:'Two roughly parallel sloping boundaries contain price in a directional channel.',slNote:'outside channel boundary',breakoutIndex:dir==='bullish'?bullishBreak:bearishBreak
+    }));
+  }
+  if (upperFlat && lowerFlat) {
+    const range=Math.max(...gH)-Math.min(...gL), mid=(Math.max(...gH)+Math.min(...gL))/2;
+    const hDir=closes[n-1]>=mid?'bullish':'bearish'; const hIdx=hDir==='bullish'?bullishBreak:bearishBreak;
+    add(makePatternTrade('Horizontal Channel',hDir,hIdx>=0?hIdx:n-1,closes[hIdx>=0?hIdx:n-1],hDir==='bullish'?Math.min(...gL)-atr*.2:Math.max(...gH)+atr*.2,hDir==='bullish'?closes[hIdx>=0?hIdx:n-1]+range:closes[hIdx>=0?hIdx:n-1]-range,hIdx>=0?'Breakout':'Forming',68,{patternType:'horizontal-channel',startIndex:geoStart,endIndex:n-1,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation / Reversal',description:'Price oscillates between broadly horizontal support and resistance with a range breakout trigger.',slNote:'outside channel boundary',breakoutIndex:hIdx}));
+    const dir=closes[n-1]>=mid?'bullish':'bearish'; const idx=dir==='bullish'?bullishBreak:bearishBreak;
+    add(makePatternTrade(dir==='bullish'?'Bullish Rectangle':'Bearish Rectangle',dir,idx>=0?idx:n-1,closes[idx>=0?idx:n-1],dir==='bullish'?Math.min(...gL)-atr*.2:Math.max(...gH)+atr*.2,dir==='bullish'?closes[idx>=0?idx:n-1]+range:closes[idx>=0?idx:n-1]-range,idx>=0?'Breakout':'Forming',69,{
+      patternType:dir==='bullish'?'bullish-rectangle':'bearish-rectangle',startIndex:geoStart,endIndex:n-1,upper:{a:{index:geoStart,price:grH.intercept},b:{index:n-1,price:hLast}},lower:{a:{index:geoStart,price:grL.intercept},b:{index:n-1,price:lLast}},category:'Continuation',description:'Sideways consolidation between broadly horizontal support and resistance.',slNote:'outside rectangle boundary',breakoutIndex:idx
+    }));
+  }
+
+  // ---- Swing reversal patterns ----
+  const hp = highPivots.filter(p=>p.index>=patternStart), lp=lowPivots.filter(p=>p.index>=patternStart);
+  const lastHighs = hp.slice(-7), lastLows=lp.slice(-7);
+  const peakTol = Math.max(tol, .004);
+  if (lastHighs.length>=2) {
+    const a=lastHighs[lastHighs.length-2], b=lastHighs[lastHighs.length-1];
+    const trough=lastLows.find(p=>p.index>a.index&&p.index<b.index);
+    if (trough && patternPct(a.price,b.price)<=peakTol*100) {
+      const level=trough.price, idx=closes.findIndex((c,i)=>i>b.index&&c<level);
+      const useIdx=idx>=0?idx:n-1, entry=closes[useIdx], sl=Math.max(a.price,b.price)+atr*.2;
+      add(makePatternTrade('Double Top','bearish',useIdx,entry,sl,entry-(Math.max(a.price,b.price)-level),idx>=0?'Breakout':'Forming',82,{
+        patternType:'double-top',startIndex:a.index,endIndex:useIdx,keyLevel:level,category:'Reversal',description:'Two swing highs form at a similar price with a trough between them; neckline break confirms the pattern.',slNote:'above double-top highs',breakoutIndex:idx
+      }));
+    }
+  }
+  if (lastLows.length>=2) {
+    const a=lastLows[lastLows.length-2], b=lastLows[lastLows.length-1];
+    const peak=lastHighs.find(p=>p.index>a.index&&p.index<b);
+    if (peak && patternPct(a.price,b.price)<=peakTol*100) {
+      const level=peak.price, idx=closes.findIndex((c,i)=>i>b.index&&c>level);
+      const useIdx=idx>=0?idx:n-1, entry=closes[useIdx], sl=Math.min(a.price,b.price)-atr*.2;
+      add(makePatternTrade('Double Bottom','bullish',useIdx,entry,sl,entry+(level-Math.min(a.price,b.price)),idx>=0?'Breakout':'Forming',82,{
+        patternType:'double-bottom',startIndex:a.index,endIndex:useIdx,keyLevel:level,category:'Reversal',description:'Two swing lows form at a similar price with a peak between them; neckline break confirms the pattern.',slNote:'below double-bottom lows',breakoutIndex:idx
+      }));
+    }
+  }
+
+  function threePoint(extrema, bullish) {
+    if (extrema.length<3) return;
+    const q=extrema.slice(-3), [a,b,c]=q;
+    if (bullish) {
+      const mid=(a.price+b.price)/2;
+      if (Math.abs(a.price-b.price)/Math.max(Math.abs(mid),Number.EPSILON)<=peakTol && c.price <= Math.max(a.price,b.price)*(1+peakTol*0.5)) {
+        const valley=lastLows.find(p=>p.index>b.index&&p.index<c.index);
+        if(valley){const level=valley.price;const idx=closes.findIndex((x,i)=>i>c.index&&x>level);const ui=idx>=0?idx:n-1;add(makePatternTrade('Triple Bottom','bullish',ui,closes[ui],Math.min(a.price,b.price,c.price)-atr*.2,closes[ui]+(level-Math.min(a.price,b.price,c.price)),idx>=0?'Breakout':'Forming',79,{patternType:'triple-bottom',startIndex:a.index,endIndex:ui,keyLevel:level,category:'Reversal',description:'Three lows cluster around a common support area with a neckline above.',slNote:'below triple-bottom lows',breakoutIndex:idx}));}
+      }
+    } else {
+      const mid=(a.price+b.price)/2;
+      if (Math.abs(a.price-b.price)/Math.max(Math.abs(mid),Number.EPSILON)<=peakTol && c.price >= Math.min(a.price,b.price)*(1-peakTol*0.5)) {
+        const peak=lastHighs.find(p=>p.index>b.index&&p.index<c.index);
+        if(peak){const level=peak.price;const idx=closes.findIndex((x,i)=>i>c.index&&x<level);const ui=idx>=0?idx:n-1;add(makePatternTrade('Triple Top','bearish',ui,closes[ui],Math.max(a.price,b.price,c.price)+atr*.2,closes[ui]-(Math.max(a.price,b.price,c.price)-level),idx>=0?'Breakout':'Forming',79,{patternType:'triple-top',startIndex:a.index,endIndex:ui,keyLevel:level,category:'Reversal',description:'Three highs cluster around a common resistance area with a neckline below.',slNote:'above triple-top highs',breakoutIndex:idx}));}
+      }
+    }
+  }
+  threePoint(lastLows,true); threePoint(lastHighs,false);
+
+  // Head & shoulders / inverse
+  const seq = [];
+  let hiIdx=0, loIdx=0;
+  const alternating=[];
+  while (hiIdx<hp.length || loIdx<lp.length) {
+    const h=hp[hiIdx], l=lp[loIdx];
+    if (h && (!l || h.index<l.index)) { alternating.push({kind:'H',...h}); hiIdx++; }
+    else if (l) { alternating.push({kind:'L',...l}); loIdx++; }
+    else break;
+  }
+  const alt=alternating.slice(-9);
+  for(let i=0;i<=alt.length-5;i++){
+    const q=alt.slice(i,i+5); if(q.map(x=>x.kind).join('')==='HLHLH'){
+      const [h1,l1,h2,l2,h3]=q; const shouldersSimilar=patternPct(h1.price,h3.price)<=peakTol*100; const headHigher=h2.price>h1.price*(1+tol) && h2.price>h3.price*(1+tol);
+      if(shouldersSimilar&&headHigher){const neckline=(l1.price+l2.price)/2;const idx=closes.findIndex((x,j)=>j>h3.index&&x<neckline);const ui=idx>=0?idx:n-1;add(makePatternTrade('Head & Shoulders','bearish',ui,closes[ui],h2.price+atr*.2,closes[ui]-(h2.price-neckline),idx>=0?'Breakout':'Forming',91,{patternType:'head-and-shoulders',startIndex:h1.index,endIndex:ui,keyLevel:neckline,category:'Reversal',description:'Left shoulder, higher head, and right shoulder around a shared neckline.',slNote:'above head',breakoutIndex:idx,points:[h1,l1,h2,l2,h3]}));}
+    }
+    if(q.map(x=>x.kind).join('')==='LHLHL'){
+      const [l1,h1,l2,h2,l3]=q; const shouldersSimilar=patternPct(l1.price,l3.price)<=peakTol*100; const headLower=l2.price<l1.price*(1-tol) && l2.price<l3.price*(1-tol);
+      if(shouldersSimilar&&headLower){const neckline=(h1.price+h2.price)/2;const idx=closes.findIndex((x,j)=>j>l3.index&&x>neckline);const ui=idx>=0?idx:n-1;add(makePatternTrade('Inverse Head & Shoulders','bullish',ui,closes[ui],l2.price-atr*.2,closes[ui]+(neckline-l2.price),idx>=0?'Breakout':'Forming',91,{patternType:'inverse-head-and-shoulders',startIndex:l1.index,endIndex:ui,keyLevel:neckline,category:'Reversal',description:'Left shoulder, lower head, and right shoulder around a shared neckline.',slNote:'below head',breakoutIndex:idx,points:[l1,h1,l2,h2,l3]}));}
+    }
+  }
+
+  // Cup / handle families (smooth U-shape approximation)
+  const cupLen=Math.min(40,n-patternStart); if(cupLen>=18){
+    const cs=n-cupLen, ce=n-1, minIdx=cs+Math.floor(cupLen*.45); let minP=Infinity, minI=minIdx;
+    for(let i=cs+4;i<cs+Math.floor(cupLen*.75);i++){if(lows[i]<minP){minP=lows[i];minI=i;}}
+    const left=Math.max(...highs.slice(cs,minI)), right=Math.max(...highs.slice(minI,ce-3));
+    const rim=(left+right)/2, rimTol=patternPct(left,right);
+    if(rimTol<=peakTol*100*2 && minP<rim-atr*2){
+      const handleStart=Math.max(minI+2,ce-8), handleMin=Math.min(...lows.slice(handleStart,ce+1));
+      if(rim-handleMin<=Math.max((rim-minP)*.45,atr*1.5)){
+        const idx=closes.findIndex((x,j)=>j>handleStart&&x>rim); const ui=idx>=0?idx:n-1; add(makePatternTrade('Cup & Handle','bullish',ui,closes[ui],handleMin-atr*.15,closes[ui]+(rim-minP),idx>=0?'Breakout':'Forming',84,{patternType:'cup-and-handle',startIndex:cs,endIndex:ui,keyLevel:rim,category:'Continuation / Reversal',description:'Rounded cup recovering toward a common rim followed by a shallow handle.',slNote:'below handle low',breakoutIndex:idx,points:[{index:cs,price:left},{index:minI,price:minP},{index:ce,price:right}]}));
+    }
+    let invMax=-Infinity, invI=minIdx;
+    for(let i=cs+4;i<cs+Math.floor(cupLen*.75);i++){if(highs[i]>invMax){invMax=highs[i];invI=i;}}
+    const invLeft=Math.min(...lows.slice(cs,invI)), invRight=Math.min(...lows.slice(invI,Math.max(invI+2,ce-3))), invRim=(invLeft+invRight)/2;
+    if(invMax>invRim+atr*2 && patternPct(invLeft,invRight)<=peakTol*100*2){
+      const invHandleEnd=ce, invHandleStart=Math.max(invI+2,ce-8), invHandleMax=Math.max(...highs.slice(invHandleStart,invHandleEnd+1));
+      if(invHandleMax-invRim<=Math.max((invMax-invRim)*.45,atr*1.5)){
+        const idx=closes.findIndex((x,j)=>j>invHandleStart&&x<invRim); const ui=idx>=0?idx:n-1;
+        add(makePatternTrade('Inverse Cup & Handle','bearish',ui,closes[ui],invHandleMax+atr*.15,closes[ui]-(invMax-invRim),idx>=0?'Breakout':'Forming',76,{patternType:'inverse-cup-and-handle',startIndex:cs,endIndex:ui,keyLevel:invRim,category:'Reversal',description:'Inverted rounded structure recovering toward a common rim, followed by a shallow counter-trend handle.',slNote:'above handle high',breakoutIndex:idx,points:[{index:cs,price:invLeft},{index:invI,price:invMax},{index:ce,price:invRight}]}));
+      }
+    }
+  }
+
+  // Rounding structures using curvature and trend direction
+  const rLen=Math.min(36,n-patternStart), rs=n-rLen, re=n-1, rv=closes.slice(rs,re+1), midI=Math.floor(rLen/2); const leftR=patternLinReg(rv.slice(0,Math.max(4,midI))), rightR=patternLinReg(rv.slice(midI));
+  const center=rv[midI], leftEdge=rv[0], rightEdge=rv[rv.length-1];
+  if(center<leftEdge-atr && center<rightEdge-atr && leftR.slope<0 && rightR.slope>0) add(makePatternTrade('Rounding Bottom','bullish',n-1,closes[n-1],Math.min(...rv)-atr*.2,closes[n-1]+Math.max(atr*2,(Math.max(leftEdge,rightEdge)-center)), 'Forming',73,{patternType:'rounding-bottom',startIndex:rs,endIndex:re,category:'Reversal',description:'Longer curved decline transitions into a base and rising recovery.',slNote:'below rounding low'}));
+  if(center>leftEdge+atr && center>rightEdge+atr && leftR.slope>0 && rightR.slope<0) add(makePatternTrade('Rounding Top','bearish',n-1,closes[n-1],Math.max(...rv)+atr*.2,closes[n-1]-Math.max(atr*2,(center-Math.min(leftEdge,rightEdge))), 'Forming',73,{patternType:'rounding-top',startIndex:rs,endIndex:re,category:'Reversal',description:'Longer curved advance transitions into a top and falling recovery.',slNote:'above rounding high'}));
+
+  // Broadening / diamond approximations
+  const firstHalfH=patternLinReg(sliceHigh.slice(0,Math.floor(sliceHigh.length/2))), secondHalfH=patternLinReg(sliceHigh.slice(Math.floor(sliceHigh.length/2)));
+  const firstHalfL=patternLinReg(sliceLow.slice(0,Math.floor(sliceLow.length/2))), secondHalfL=patternLinReg(sliceLow.slice(Math.floor(sliceLow.length/2)));
+  const widening=(secondHalfH.slope>firstHalfH.slope && secondHalfL.slope<firstHalfL.slope);
+  const narrowing=(secondHalfH.slope<firstHalfH.slope && secondHalfL.slope>firstHalfL.slope);
+  const diamondExpand = firstHalfH.slope > atr*0.02 && firstHalfL.slope < -atr*0.02;
+  const diamondContract = secondHalfH.slope < -atr*0.02 && secondHalfL.slope > atr*0.02;
+  if(widening){
+    const dir=closes[n-1]>(Math.max(...sliceHigh)+Math.min(...sliceLow))/2?'bullish':'bearish'; add(makePatternTrade('Broadening Formation',dir,n-1,closes[n-1],dir==='bullish'?Math.min(...sliceLow)-atr*.2:Math.max(...sliceHigh)+atr*.2,dir==='bullish'?closes[n-1]+atr*3:closes[n-1]-atr*3,'Forming',67,{patternType:'broadening-formation',startIndex:patternStart,endIndex:n-1,category:'Volatility',description:'Alternating expanding highs and lows produce a widening price structure.',slNote:'outside formation boundary'}));
+  }
+  if(diamondExpand && diamondContract){ const dir=closes[n-1]>(Math.max(...sliceHigh)+Math.min(...sliceLow))/2?'bullish':'bearish'; add(makePatternTrade(dir==='bullish'?'Diamond Bottom':'Diamond Top',dir,n-1,closes[n-1],dir==='bullish'?Math.min(...sliceLow)-atr*.2:Math.max(...sliceHigh)+atr*.2,dir==='bullish'?closes[n-1]+atr*3:closes[n-1]-atr*3,'Forming',63,{patternType:dir==='bullish'?'diamond-bottom':'diamond-top',startIndex:patternStart,endIndex:n-1,category:'Reversal',description:'Broadening action transitions into contraction, creating a diamond-like structure.',slNote:'outside diamond boundary'})); }
+
+  // De-duplicate by pattern name, keep most recent/highest confidence.
+  const dedup = new Map();
+  for (const p of patterns) {
+    if (!p) continue;
+    const old=dedup.get(p.patternType);
+    if(!old || p.chochIndex>old.chochIndex || p.confidence>old.confidence) dedup.set(p.patternType,p);
+  }
+  const final=Array.from(dedup.values()).sort((a,b)=>b.chochIndex-a.chochIndex || b.confidence-a.confidence);
+  const activeCandidates=final.filter(p=>p.stage!=='Forming' || p.chochIndex>=n-8).slice(0,12);
+  const active=activeCandidates[0]||final[0]||null;
+  return { patterns: final, active, forming: final.filter(p=>p.stage==='Forming'), names: final.map(p=>p.patternName), swingHighs, swingLows };
+}
+
+/* ============================================================
+   SMC
+   ============================================================ */
+function detectOrderBlocks(highs, lows, closes, opens, avgWindow = 20) {
+  const n = closes.length;
+  const obs = [];
+  if (n < avgWindow + 3) return obs;
+  for (let i = avgWindow; i < n - 1; i++) {
+    let sumRange = 0;
+    for (let j = i - avgWindow + 1; j <= i; j++) sumRange += (highs[j] - lows[j]);
+    const avgRange = sumRange / avgWindow;
+    const impulseRange = highs[i + 1] - lows[i + 1];
+    if (impulseRange < avgRange * 1.5) continue;
+    const isBullishImpulse = closes[i + 1] > opens[i + 1] && closes[i + 1] > highs[i];
+    const isBearishImpulse = closes[i + 1] < opens[i + 1] && closes[i + 1] < lows[i];
+    const isBearishCandle = closes[i] < opens[i];
+    const isBullishCandle = closes[i] > opens[i];
+    if (isBullishImpulse && isBearishCandle) obs.push({ index: i, type: 'bullish', high: highs[i], low: lows[i], impulseIndex: i + 1 });
+    else if (isBearishImpulse && isBullishCandle) obs.push({ index: i, type: 'bearish', high: highs[i], low: lows[i], impulseIndex: i + 1 });
+  }
+  return obs;
+}
+
+function detectFVGs(highs, lows) {
+  const n = highs.length;
+  const bullFVGs = [], bearFVGs = [];
+  for (let i = 2; i < n; i++) {
+    if (lows[i] > highs[i - 2]) bullFVGs.push({ index: i, type: 'bullish', top: lows[i], bottom: highs[i - 2], mid: (lows[i] + highs[i - 2]) / 2 });
+    if (highs[i] < lows[i - 2]) bearFVGs.push({ index: i, type: 'bearish', top: lows[i - 2], bottom: highs[i], mid: (lows[i - 2] + highs[i]) / 2 });
+  }
+  return { bullFVGs, bearFVGs };
+}
+
+function isOBMitigated(ob, highs, lows, n) {
+  for (let j = ob.impulseIndex + 1; j < n; j++) {
+    if (ob.type === 'bullish' && lows[j] <= ob.low) return true;
+    if (ob.type === 'bearish' && highs[j] >= ob.high) return true;
+  }
+  return false;
+}
+
+function isFVGMitigated(fvg, highs, lows, n) {
+  for (let j = fvg.index + 1; j < n; j++) {
+    if (fvg.type === 'bullish' && lows[j] <= fvg.bottom) return true;
+    if (fvg.type === 'bearish' && highs[j] >= fvg.top) return true;
+  }
+  return false;
+}
+
+function detectSMCSignals(highs, lows, closes, opens, lookback, tolerancePct) {
+  const n = closes.length;
+  const { swingHighs, swingLows } = findSwings(highs, lows, lookback);
+  const obs = detectOrderBlocks(highs, lows, closes, opens);
+  const { bullFVGs, bearFVGs } = detectFVGs(highs, lows);
+  const currentPrice = closes[n - 1];
+  const tolerance = currentPrice * (tolerancePct / 100);
+  const lastIdx = n - 1;
+  const maxAge = 120;
+
+  const candidates = [];
+  for (const ob of obs) {
+    if (lastIdx - ob.index > maxAge) continue;
+    if (isOBMitigated(ob, highs, lows, n)) continue;
+    candidates.push({ kind: 'OB', type: ob.type, top: ob.high, bottom: ob.low, mid: (ob.high + ob.low) / 2, formIndex: ob.index, priority: 2 });
+  }
+  for (const fvg of bullFVGs) {
+    if (lastIdx - fvg.index > maxAge) continue;
+    if (isFVGMitigated(fvg, highs, lows, n)) continue;
+    candidates.push({ kind: 'FVG', type: fvg.type, top: fvg.top, bottom: fvg.bottom, mid: fvg.mid, formIndex: fvg.index, priority: 1 });
+  }
+  for (const fvg of bearFVGs) {
+    if (lastIdx - fvg.index > maxAge) continue;
+    if (isFVGMitigated(fvg, highs, lows, n)) continue;
+    candidates.push({ kind: 'FVG', type: fvg.type, top: fvg.top, bottom: fvg.bottom, mid: fvg.mid, formIndex: fvg.index, priority: 1 });
+  }
+
+  const activeZones = candidates.filter(z => {
+    const nearTop = Math.abs(currentPrice - z.top) <= tolerance;
+    const nearBottom = Math.abs(currentPrice - z.bottom) <= tolerance;
+    const inside = currentPrice >= z.bottom && currentPrice <= z.top;
+    return inside || nearTop || nearBottom;
+  });
+
+  activeZones.sort((a, b) => {
+    if (a.priority !== b.priority) return b.priority - a.priority;
+    return b.formIndex - a.formIndex;
+  });
+
+  const signals = [];
+  for (const zone of activeZones) {
+    const direction = zone.type;
+    const isLong = direction === 'bullish';
+    const entry = isLong ? Math.min(currentPrice, zone.mid) : Math.max(currentPrice, zone.mid);
+    const buffer = currentPrice * 0.0005;
+    const sl = isLong ? zone.bottom - buffer : zone.top + buffer;
+    const target = nextLiquidityTarget(swingHighs, swingLows, highs, lows, lastIdx, direction);
+    if (!target) continue;
+    const tp = target.level;
+    const risk = Math.abs(entry - sl);
+    const reward = Math.abs(tp - entry);
+    if (risk <= 0) continue;
+    const rr = reward / risk;
+
+    signals.push({
+      kind: zone.kind, chochIndex: lastIdx, chochType: direction,
+      zoneType: zone.kind, zoneTop: zone.top, zoneBottom: zone.bottom,
+      formIndex: zone.formIndex,
+      entry, sl, slNote: isLong ? 'below zone low' : 'above zone high',
+      tp, risk, reward, rr, mode: 'smc', barsAgo: 0
+    });
+  }
+  return { signals, zones: candidates, activeZones, sweeps: [], chochEvents: [], obs, bullFVGs, bearFVGs };
+}
+
+/* ============================================================
+   STATE
+   ============================================================ */
+let candles = [];
+let chart = null;
+let socket = null;
+let params = null;
+let activeMode = 'regular';
+let lastAnalysis = null;
+let currentSymbol = '';
+let currentGranularity = 0;
+let startToken = 0;
+let reconnectTimer = null;
+
+const closedTrades = [];
+const activeTrades = new Map();
+let needsBackfill = true;
+let historyFilter = 'all';
+let historySortKey = 'time';
+let historySortDir = 'desc';
+
+const notifPrefs = {
+  regular: true, inverted: true, smc: true, trendline: true, patterns: true,
+  bullish: true, bearish: true,
+  sound: true, minRR: 1.5
+};
+
+const notifiedSignals = new Set();
+
+const $ = id => document.getElementById(id);
+const els = {
+  connectionPill: $('connectionPill'), connectionText: $('connectionText'),
+  clock: $('clock'), reconnectBtn: $('reconnectBtn'),
+  notifHeaderBtn: $('notifHeaderBtn'), notifHeaderText: $('notifHeaderText'),
+  notifStatus: $('notifStatus'), notifStatusText: $('notifStatusText'),
+  enableNotifBtn: $('enableNotifBtn'),
+  notifRegular: $('notifRegular'), notifInverted: $('notifInverted'), notifSMC: $('notifSMC'), notifTrendline: $('notifTrendline'), notifPatterns: $('notifPatterns'),
+  notifBullish: $('notifBullish'), notifBearish: $('notifBearish'), notifSound: $('notifSound'),
+  notifMinRR: $('notifMinRR'),
+  toastContainer: $('toastContainer'),
+  tabRegular: $('tabRegular'), tabInverted: $('tabInverted'), tabSMC: $('tabSMC'), tabTrendline: $('tabTrendline'), tabPatterns: $('tabPatterns'),
+  badgeRegular: $('badgeRegular'), badgeInverted: $('badgeInverted'), badgeSMC: $('badgeSMC'), badgeTrendline: $('badgeTrendline'), badgePatterns: $('badgePatterns'),
+  tabHint: $('tabHint'),
+  signalCard: $('signalCard'), signalEyebrow: $('signalEyebrow'),
+  signalMain: $('signalMain'), signalDesc: $('signalDesc'), livePrice: $('livePrice'),
+  planSectionTitle: $('planSectionTitle'), riskSectionTitle: $('riskSectionTitle'),
+  planTagEntry: $('planTagEntry'),
+  planEntry: $('planEntry'), planEntrySub: $('planEntrySub'),
+  planSL: $('planSL'), planSLSub: $('planSLSub'), planTP: $('planTP'),
+  statRR: $('statRR'), statRisk: $('statRisk'), statReward: $('statReward'),
+  statBars: $('statBars'), statBarsLabel: $('statBarsLabel'),
+  lastUpdate: $('lastUpdate'), chartSymbol: $('chartSymbol'), chartTF: $('chartTF'),
+  eventLog: $('eventLog'),
+  hsTotal: $('hsTotal'), hsWins: $('hsWins'), hsLosses: $('hsLosses'),
+  hsWR: $('hsWR'), hsR: $('hsR'), hsOpen: $('hsOpen'),
+  historyCount: $('historyCount'),
+  tradeTableBody: $('tradeTableBody'),
+  insightText: $('insightText'),
+  exportBtn: $('exportBtn'),
+  patternPanel: $('patternPanel'), patternPanelCount: $('patternPanelCount'), patternGrid: $('patternGrid'), patternLibrary: $('patternLibrary'),
+};
+
+/* ============================================================
+   UI CONTROLS
+   ============================================================ */
+const tabButtons = [els.tabRegular, els.tabInverted, els.tabSMC, els.tabTrendline, els.tabPatterns];
+const modeDescriptions = {
+  regular: 'Sweep → reversal CHoCH',
+  inverted: 'Sweep → continuation CHoCH',
+  smc: 'Order Block / FVG retest',
+  trendline: '3 touches → breakout → retest',
+  patterns: 'Flags · wedges · triangles · tops · bottoms'
+};
+
+function setActiveMode(mode) {
+  if (!modeDescriptions[mode]) mode = 'regular';
+  activeMode = mode;
+  tabButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+  els.tabHint.textContent = modeDescriptions[mode] || '';
+  if (lastAnalysis && candles.length) render();
+}
+
+tabButtons.forEach(btn => btn.addEventListener('click', () => setActiveMode(btn.dataset.mode)));
+
+let restartTimer = null;
+function queueRestart(reason = 'Configuration changed') {
+  clearTimeout(restartTimer);
+  restartTimer = setTimeout(() => {
+    if (!currentUser) return;
+    start(reason);
+  }, 120);
+}
+
+['instrument', 'granularity'].forEach(id => {
+  $(id).addEventListener('change', () => { saveUserPrefs(); queueRestart(); });
+});
+['swingLookback', 'signalValidity', 'smcTolerance', 'trendlineTolerance', 'trendlineRetestBars', 'patternLookback', 'patternTolerance'].forEach(id => {
+  $(id).addEventListener('change', () => { saveUserPrefs(); if (candles.length) { needsBackfill = true; render(); } });
+});
+
+els.reconnectBtn.addEventListener('click', () => {
+  if (!currentUser) return;
+  els.reconnectBtn.disabled = true;
+  start('Manual reconnect').finally(() => { setTimeout(() => { els.reconnectBtn.disabled = false; }, 700); });
+});
+
+function updateClock() { els.clock.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false }); }
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+function updateNotifUI() {
+  if (!('Notification' in window)) {
+    els.notifStatus.className = 'notif-status denied';
+    els.notifStatus.innerHTML = '<span class="icon">✖</span><span>Notifications not supported</span>';
+    els.enableNotifBtn.disabled = true;
+    els.enableNotifBtn.textContent = 'Not Supported';
+    els.notifHeaderText.textContent = 'Not Supported';
+    return;
+  }
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    els.notifStatus.className = 'notif-status granted';
+    els.notifStatus.innerHTML = '<span class="icon">🔔</span><span>Browser notifications enabled</span>';
+    els.enableNotifBtn.textContent = 'Notifications Active';
+    els.enableNotifBtn.disabled = true;
+    els.notifHeaderBtn.classList.add('enabled');
+    els.notifHeaderText.textContent = 'Notifications On';
+  } else if (perm === 'denied') {
+    els.notifStatus.className = 'notif-status denied';
+    els.notifStatus.innerHTML = '<span class="icon">🔕</span><span>Notifications blocked in browser settings</span>';
+    els.enableNotifBtn.textContent = 'Blocked — check settings';
+    els.enableNotifBtn.disabled = true;
+    els.notifHeaderBtn.classList.remove('enabled');
+    els.notifHeaderText.textContent = 'Blocked';
+  } else {
+    els.notifStatus.className = 'notif-status';
+    els.notifStatus.innerHTML = '<span class="icon">🔕</span><span>Browser notifications are not enabled</span>';
+    els.enableNotifBtn.textContent = 'Enable Browser Notifications';
+    els.enableNotifBtn.disabled = false;
+    els.notifHeaderBtn.classList.remove('enabled');
+    els.notifHeaderText.textContent = 'Notifications Off';
+  }
+}
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return;
+  try { await Notification.requestPermission(); } catch (e) {}
+  updateNotifUI();
+}
+els.enableNotifBtn.addEventListener('click', requestNotifPermission);
+els.notifHeaderBtn.addEventListener('click', () => {
+  const panel = els.notifStatus.closest('.panel');
+  panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  panel.style.transition = 'box-shadow 0.4s';
+  panel.style.boxShadow = '0 0 0 2px rgba(255,181,71,0.6)';
+  setTimeout(() => { panel.style.boxShadow = ''; }, 1200);
+});
+
+function bindCheckRow(el, key) {
+  el.addEventListener('click', () => {
+    notifPrefs[key] = !notifPrefs[key];
+    el.classList.toggle('checked', notifPrefs[key]);
+    saveUserPrefs();
+  });
+}
+bindCheckRow(els.notifRegular, 'regular');
+bindCheckRow(els.notifInverted, 'inverted');
+bindCheckRow(els.notifSMC, 'smc');
+bindCheckRow(els.notifTrendline, 'trendline');
+bindCheckRow(els.notifPatterns, 'patterns');
+bindCheckRow(els.notifBullish, 'bullish');
+bindCheckRow(els.notifBearish, 'bearish');
+bindCheckRow(els.notifSound, 'sound');
+
+els.notifMinRR.addEventListener('change', () => {
+  notifPrefs.minRR = parseFloat(els.notifMinRR.value) || 0;
+  saveUserPrefs();
+});
+
+function syncCheckRows() {
+  els.notifRegular.classList.toggle('checked', notifPrefs.regular);
+  els.notifInverted.classList.toggle('checked', notifPrefs.inverted);
+  els.notifSMC.classList.toggle('checked', notifPrefs.smc);
+  els.notifTrendline.classList.toggle('checked', notifPrefs.trendline);
+  els.notifPatterns.classList.toggle('checked', notifPrefs.patterns);
+  els.notifBullish.classList.toggle('checked', notifPrefs.bullish);
+  els.notifBearish.classList.toggle('checked', notifPrefs.bearish);
+  els.notifSound.classList.toggle('checked', notifPrefs.sound);
+  els.notifMinRR.value = notifPrefs.minRR;
+}
+syncCheckRows();
+updateNotifUI();
+
+let audioCtx = null;
+function playAlertSound(isBullish) {
+  if (!notifPrefs.sound) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    const baseFreq = isBullish ? 880 : 440;
+    const now = audioCtx.currentTime;
+    osc.frequency.setValueAtTime(baseFreq, now);
+    osc.frequency.setValueAtTime(baseFreq * 1.5, now + 0.08);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.15, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  } catch (e) {}
+}
+
+function showToast(signal) {
+  const isBullish = signal.chochType === 'bullish';
+  let modeLabel, toastCls, icon;
+  if (signal.mode === 'smc') {
+    modeLabel = signal.zoneType === 'OB' ? 'Order Block' : 'Fair Value Gap';
+    toastCls = 'smc';
+    icon = '◈';
+  } else if (signal.mode === 'inverted') {
+    modeLabel = 'Inverted Liq Sweep';
+    toastCls = isBullish ? 'bull' : 'bear';
+    icon = isBullish ? '▲' : '▼';
+  } else if (signal.mode === 'trendline') {
+    modeLabel = 'Trendline Pattern';
+  } else if (signal.mode === 'patterns') {
+    modeLabel = signal.patternName || 'Chart Pattern';
+    toastCls = isBullish ? 'bull' : 'bear';
+    icon = isBullish ? '▲' : '▼';
+  } else {
+    modeLabel = 'Liquidity Sweep';
+    toastCls = isBullish ? 'bull' : 'bear';
+    icon = isBullish ? '▲' : '▼';
+  }
+  const dirLabel = isBullish ? 'BUY' : 'SELL';
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + toastCls;
+  toast.innerHTML = `
+    <div class="toast-icon">${icon}</div>
+    <div class="toast-body">
+      <div class="toast-title">${modeLabel} · ${dirLabel}</div>
+      <div class="toast-message">New ${isBullish ? 'bullish' : 'bearish'} setup detected</div>
+      <div class="toast-detail">Entry ${signal.entry.toFixed(4)} · SL ${signal.sl.toFixed(4)} · TP ${signal.tp.toFixed(4)} · R:R ${signal.rr.toFixed(2)}</div>
+    </div>
+    <button class="toast-close" aria-label="Close">×</button>
+  `;
+  toast.querySelector('.toast-close').addEventListener('click', () => toast.remove());
+  els.toastContainer.appendChild(toast);
+  setTimeout(() => {
+    toast.style.transition = 'opacity 0.3s, transform 0.3s';
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(40px)';
+    setTimeout(() => toast.remove(), 350);
+  }, 12000);
+}
+
+function sendBrowserNotification(signal) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const isBullish = signal.chochType === 'bullish';
+  let modeLabel;
+  if (signal.mode === 'smc') modeLabel = signal.zoneType === 'OB' ? 'Order Block' : 'Fair Value Gap';
+  else if (signal.mode === 'inverted') modeLabel = 'Inverted Liq Sweep';
+  else if (signal.mode === 'trendline') modeLabel = 'Trendline Pattern';
+  else if (signal.mode === 'patterns') modeLabel = signal.patternName || 'Chart Pattern';
+  else modeLabel = 'Liquidity Sweep';
+  const dirLabel = isBullish ? 'BUY' : 'SELL';
+  try {
+    const n = new Notification(`${modeLabel} · ${dirLabel} ${currentSymbol}`, {
+      body: `Entry ${signal.entry.toFixed(4)}  ·  SL ${signal.sl.toFixed(4)}  ·  TP ${signal.tp.toFixed(4)}\nR:R ${signal.rr.toFixed(2)}  ·  ${tfLabel(currentGranularity)}`,
+      tag: `signal-${signal.mode}-${signal.chochIndex}-${signal.zoneType || ''}`,
+      silent: true
+    });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch (e) {}
+}
+
+function shouldNotify(signal) {
+  if (signal.mode === 'regular' && !notifPrefs.regular) return false;
+  if (signal.mode === 'inverted' && !notifPrefs.inverted) return false;
+  if (signal.mode === 'smc' && !notifPrefs.smc) return false;
+  if (signal.mode === 'trendline' && !notifPrefs.trendline) return false;
+  if (signal.mode === 'patterns' && !notifPrefs.patterns) return false;
+  if (signal.chochType === 'bullish' && !notifPrefs.bullish) return false;
+  if (signal.chochType === 'bearish' && !notifPrefs.bearish) return false;
+  if (signal.rr < notifPrefs.minRR) return false;
+  return true;
+}
+
+function dispatchNotifications(analysis) {
+  const allSignals = [
+    ...analysis.regular.signals.map(s => ({ ...s, mode: 'regular' })),
+    ...analysis.inverted.signals.map(s => ({ ...s, mode: 'inverted' })),
+    ...analysis.smc.signals,
+    ...analysis.trendline.signals,
+    ...(analysis.patterns?.patterns || []).filter(p => p.stage !== 'Forming')
+  ];
+  for (const sig of allSignals) {
+    const zoneKey = sig.zoneType ? `-${sig.zoneType}-${sig.formIndex}` : '';
+    const key = `${sig.mode}-${sig.chochIndex}-${sig.chochType}${zoneKey}-${sig.patternType || ''}`;
+    if (notifiedSignals.has(key)) continue;
+    notifiedSignals.add(key);
+    const age = candles.length - 1 - sig.chochIndex;
+    if (age > 2) continue;
+    if (!shouldNotify(sig)) continue;
+    showToast(sig);
+    sendBrowserNotification(sig);
+    playAlertSound(sig.chochType === 'bullish');
+  }
+}
+
+/* ============================================================
+   TRADE TRACKING & ACCURACY
+   ============================================================ */
+function tradeKey(sig) {
+  const zoneKey = sig.zoneType ? `-${sig.zoneType}-${sig.formIndex || ''}` : '';
+  return `${sig.mode}-${sig.chochIndex}-${sig.chochType}${zoneKey}-${sig.patternType || ''}`;
+}
+
+function createTradeRecord(sig) {
+  return {
+    id: tradeKey(sig),
+    mode: sig.mode,
+    direction: sig.chochType,
+    zoneType: sig.zoneType || null,
+    patternName: sig.patternName || null,
+    patternStage: sig.stage || null,
+    patternConfidence: sig.confidence ?? null,
+    signalIndex: sig.chochIndex,
+    signalEpoch: candles[sig.chochIndex] ? candles[sig.chochIndex].epoch : 0,
+    entry: sig.entry,
+    sl: sig.sl,
+    tp: sig.tp,
+    rr: sig.rr,
+    status: 'open',
+    exitPrice: null,
+    exitIndex: null,
+    exitEpoch: null,
+    barsHeld: null,
+    pnlPct: null,
+    rMultiple: null
+  };
+}
+
+function simulateTradeOutcome(trade) {
+  const isLong = trade.direction === 'bullish';
+  const startIdx = trade.signalIndex + 1;
+  const endIdx = candles.length - 1;
+  for (let i = startIdx; i <= endIdx; i++) {
+    const c = candles[i];
+    if (isLong) {
+      if (c.low <= trade.sl) return { status: 'loss', price: trade.sl, idx: i };
+      if (c.high >= trade.tp) return { status: 'win', price: trade.tp, idx: i };
+    } else {
+      if (c.high >= trade.sl) return { status: 'loss', price: trade.sl, idx: i };
+      if (c.low <= trade.tp) return { status: 'win', price: trade.tp, idx: i };
+    }
+  }
+  return { status: 'open', price: null, idx: null };
+}
+
+function finalizeTrade(trade, result) {
+  trade.status = result.status;
+  trade.exitPrice = result.price;
+  trade.exitIndex = result.idx;
+  trade.exitEpoch = result.idx !== null && candles[result.idx] ? candles[result.idx].epoch : null;
+  trade.barsHeld = result.idx !== null ? result.idx - trade.signalIndex : null;
+
+  const risk = Math.abs(trade.entry - trade.sl);
+  if (result.price !== null && risk > 0) {
+    if (trade.direction === 'bullish') {
+      trade.pnlPct = (result.price - trade.entry) / trade.entry;
+      trade.rMultiple = (result.price - trade.entry) / risk;
+    } else {
+      trade.pnlPct = (trade.entry - result.price) / trade.entry;
+      trade.rMultiple = (trade.entry - result.price) / risk;
+    }
+  }
+}
+
+function registerTrade(sig) {
+  const key = tradeKey(sig);
+  if (activeTrades.has(key)) return;
+  if (closedTrades.some(t => t.id === key)) return;
+  const trade = createTradeRecord(sig);
+  const result = simulateTradeOutcome(trade);
+  if (result.status === 'open') {
+    activeTrades.set(key, trade);
+  } else {
+    finalizeTrade(trade, result);
+    closedTrades.unshift(trade);
+    if (closedTrades.length > 300) closedTrades.pop();
+  }
+}
+
+function checkActiveTrades() {
+  const lastIdx = candles.length - 1;
+  const toClose = [];
+  for (const [key, trade] of activeTrades) {
+    if (lastIdx <= trade.signalIndex) continue;
+    const result = simulateTradeOutcome(trade);
+    if (result.status !== 'open') {
+      finalizeTrade(trade, result);
+      toClose.push(key);
+    } else if (lastIdx - trade.signalIndex > 250) {
+      const c = candles[lastIdx];
+      finalizeTrade(trade, { status: 'expired', price: c.close, idx: lastIdx });
+      toClose.push(key);
+    }
+  }
+  for (const key of toClose) {
+    const t = activeTrades.get(key);
+    activeTrades.delete(key);
+    closedTrades.unshift(t);
+    if (closedTrades.length > 300) closedTrades.pop();
+  }
+}
+
+function backfillTrades(analysis) {
+  closedTrades.length = 0;
+  activeTrades.clear();
+
+  const allSignals = [
+    ...analysis.regular.signals.map(s => ({ ...s, mode: 'regular' })),
+    ...analysis.inverted.signals.map(s => ({ ...s, mode: 'inverted' })),
+    ...analysis.smc.signals.map(s => ({ ...s, mode: 'smc' })),
+    ...analysis.trendline.signals.map(s => ({ ...s, mode: 'trendline' })),
+    ...(analysis.patterns?.patterns || []).filter(p => p.stage !== 'Forming')
+  ];
+
+  allSignals.sort((a, b) => a.chochIndex - b.chochIndex);
+  for (const sig of allSignals) {
+    const key = tradeKey(sig);
+    const trade = createTradeRecord(sig);
+    const result = simulateTradeOutcome(trade);
+    if (result.status === 'open') {
+      activeTrades.set(key, trade);
+    } else {
+      finalizeTrade(trade, result);
+      closedTrades.push(trade);
+    }
+  }
+  closedTrades.sort((a, b) => b.signalEpoch - a.signalEpoch);
+}
+
+/* ============================================================
+   BEST MODE INSIGHT
+   ============================================================ */
+function computeBestMode() {
+  const modes = ['regular', 'inverted', 'smc', 'trendline', 'patterns'];
+  const stats = {};
+  for (const m of modes) {
+    const trades = closedTrades.filter(t => t.mode === m);
+    const wins = trades.filter(t => t.status === 'win').length;
+    const losses = trades.filter(t => t.status === 'loss').length;
+    const decided = wins + losses;
+    const wr = decided > 0 ? wins / decided : 0;
+    const totalR = trades.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
+    stats[m] = { total: trades.length, wins, losses, wr, totalR };
+  }
+  return stats;
+}
+
+function updateInsightCard() {
+  const stats = computeBestMode();
+  const eligible = Object.entries(stats).filter(([_, s]) => s.total >= 3);
+  if (eligible.length === 0) {
+    els.insightText.textContent = 'Not enough trade data yet. Backfill in progress.';
+    return;
+  }
+  eligible.sort((a, b) => b[1].totalR - a[1].totalR);
+  const [bestKey, best] = eligible[0];
+  const worstEntry = eligible[eligible.length - 1];
+  const worstKey = worstEntry[0];
+  const worst = worstEntry[1];
+
+  const modeNames = { regular: 'Liquidity Sweep', inverted: 'Inverted Sweep', smc: 'Smart Money Concepts', trendline: 'Trendline Pattern', patterns: 'Chart Pattern Scanner' };
+  const classMap = { regular: 'blue', inverted: 'purple', smc: 'amber', trendline: 'trendline', patterns: 'patterns' };
+
+  const bestCls = classMap[bestKey];
+  const worstCls = classMap[worstKey];
+
+  let html = `<span class="${bestCls}">${modeNames[bestKey]}</span> is leading with ` +
+    `<strong>${best.totalR >= 0 ? '+' : ''}${best.totalR.toFixed(1)}R</strong> across ${best.total} trades ` +
+    `(${(best.wr * 100).toFixed(0)}% win rate). `;
+
+  if (eligible.length > 1 && bestKey !== worstKey) {
+    html += `<span class="${worstCls}">${modeNames[worstKey]}</span> is trailing at ` +
+      `<span class="red">${worst.totalR.toFixed(1)}R</span>.`;
+  }
+
+  els.insightText.innerHTML = html;
+}
+
+/* ============================================================
+   HISTORY TABLE
+   ============================================================ */
+function sortTrades(trades) {
+  const dir = historySortDir === 'asc' ? 1 : -1;
+  return [...trades].sort((a, b) => {
+    let av, bv;
+    switch (historySortKey) {
+      case 'time': av = a.signalEpoch; bv = b.signalEpoch; break;
+      case 'mode': av = a.mode; bv = b.mode; break;
+      case 'direction': av = a.direction; bv = b.direction; break;
+      case 'entry': av = a.entry; bv = b.entry; break;
+      case 'sl': av = a.sl; bv = b.sl; break;
+      case 'tp': av = a.tp; bv = b.tp; break;
+      case 'rr': av = a.rr; bv = b.rr; break;
+      case 'bars': av = a.barsHeld ?? -1; bv = b.barsHeld ?? -1; break;
+      case 'status': av = a.status; bv = b.status; break;
+      case 'r': av = a.rMultiple ?? -999; bv = b.rMultiple ?? -999; break;
+      default: av = a.signalEpoch; bv = b.signalEpoch;
+    }
+    if (typeof av === 'string') return av.localeCompare(bv) * dir;
+    return (av - bv) * dir;
+  });
+}
+
+function updateHistoryUI() {
+  const closedFiltered = historyFilter === 'all' ? closedTrades : closedTrades.filter(t => t.mode === historyFilter);
+  const openFiltered = historyFilter === 'all'
+    ? Array.from(activeTrades.values())
+    : Array.from(activeTrades.values()).filter(t => t.mode === historyFilter);
+
+  const wins = closedFiltered.filter(t => t.status === 'win').length;
+  const losses = closedFiltered.filter(t => t.status === 'loss').length;
+  const expired = closedFiltered.filter(t => t.status === 'expired').length;
+  const total = wins + losses + expired;
+  const decided = wins + losses;
+  const wr = decided > 0 ? wins / decided : null;
+  const totalR = closedFiltered.reduce((sum, t) => sum + (t.rMultiple || 0), 0);
+
+  els.hsTotal.textContent = total;
+  els.hsWins.textContent = wins;
+  els.hsLosses.textContent = losses;
+
+  if (wr === null) {
+    els.hsWR.textContent = '—';
+    els.hsWR.className = 'stat-box-value';
+  } else {
+    els.hsWR.textContent = (wr * 100).toFixed(1) + '%';
+    els.hsWR.className = 'stat-box-value ' + (wr >= 0.5 ? 'pos' : 'neg');
+  }
+
+  els.hsR.textContent = totalR >= 0 ? '+' + totalR.toFixed(1) : totalR.toFixed(1);
+  els.hsR.className = 'stat-box-value ' + (totalR >= 0 ? 'pos' : 'neg');
+  els.hsOpen.textContent = openFiltered.length;
+
+  // Update insight card
+  updateInsightCard();
+
+  // Sort all trades
+  const allFiltered = [...openFiltered, ...closedFiltered];
+  const sorted = sortTrades(allFiltered);
+
+  els.historyCount.textContent = sorted.length + ' trade' + (sorted.length === 1 ? '' : 's');
+
+  if (sorted.length === 0) {
+    els.tradeTableBody.innerHTML = '<tr><td colspan="10" class="empty-history">No trades recorded yet</td></tr>';
+    return;
+  }
+
+  const display = sorted.slice(0, 100);
+  let html = '';
+  for (const t of display) {
+    const time = t.signalEpoch ? new Date(t.signalEpoch * 1000).toLocaleString('en-GB', {
+      hour12: false, month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit'
+    }) : '—';
+
+    const modeLabel = t.mode === 'regular' ? 'SWEEP' : t.mode === 'inverted' ? 'INVERT' : t.mode === 'trendline' ? 'TREND' : t.mode === 'patterns' ? (t.patternName || 'PATTERN') : (t.zoneType || 'SMC');
+    const dirLabel = t.direction === 'bullish' ? 'LONG' : 'SHORT';
+
+    const rDisplay = t.rMultiple !== null
+      ? (t.rMultiple >= 0 ? '+' : '') + t.rMultiple.toFixed(2) + 'R'
+      : '—';
+
+    const resultCls = t.status;
+    const resultLabel = t.status === 'win' ? 'WIN' : t.status === 'loss' ? 'LOSS' : t.status === 'expired' ? 'EXP' : 'OPEN';
+    const rCls = t.rMultiple === null ? '' : (t.rMultiple >= 0 ? 'pos' : 'neg');
+
+    html += `<tr>
+      <td>${time}</td>
+      <td><span class="mode-badge ${t.mode}">${modeLabel}</span></td>
+      <td><span class="dir-badge ${t.direction === 'bullish' ? 'bull' : 'bear'}">${dirLabel}</span></td>
+      <td class="entry-cell">${t.entry.toFixed(4)}</td>
+      <td class="sl-cell">${t.sl.toFixed(4)}</td>
+      <td class="tp-cell">${t.tp.toFixed(4)}</td>
+      <td>${t.rr.toFixed(2)}</td>
+      <td>${t.barsHeld !== null ? t.barsHeld : '—'}</td>
+      <td><span class="result-badge ${resultCls}">${resultLabel}</span></td>
+      <td class="${rCls}">${rDisplay}</td>
+    </tr>`;
+  }
+  els.tradeTableBody.innerHTML = html;
+}
+
+/* ============================================================
+   CSV EXPORT
+   ============================================================ */
+function exportCSV() {
+  const closedFiltered = historyFilter === 'all' ? closedTrades : closedTrades.filter(t => t.mode === historyFilter);
+  const openFiltered = historyFilter === 'all'
+    ? Array.from(activeTrades.values())
+    : Array.from(activeTrades.values()).filter(t => t.mode === historyFilter);
+  const all = [...openFiltered, ...closedFiltered];
+
+  if (all.length === 0) {
+    alert('No trades to export');
+    return;
+  }
+
+  const headers = ['Time', 'Mode', 'Direction', 'Zone Type', 'Entry', 'Stop Loss', 'Take Profit', 'R:R', 'Bars Held', 'Status', 'Exit Price', 'R Multiple'];
+
+  const rows = all.map(t => {
+    const time = t.signalEpoch ? new Date(t.signalEpoch * 1000).toISOString() : '';
+    return [
+      time,
+      t.mode,
+      t.direction,
+      t.zoneType || '',
+      t.entry.toFixed(4),
+      t.sl.toFixed(4),
+      t.tp.toFixed(4),
+      t.rr.toFixed(2),
+      t.barsHeld !== null ? t.barsHeld : '',
+      t.status,
+      t.exitPrice !== null ? t.exitPrice.toFixed(4) : '',
+      t.rMultiple !== null ? t.rMultiple.toFixed(2) : ''
+    ];
+  });
+
+  const csv = [headers, ...rows].map(row => row.map(cell => {
+    const str = String(cell);
+    return str.includes(',') || str.includes('"') ? '"' + str.replace(/"/g, '""') + '"' : str;
+  }).join(',')).join('\n');
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  a.href = url;
+  a.download = `deriv-trades-${currentSymbol || 'market'}-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+els.exportBtn.addEventListener('click', exportCSV);
+
+document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    historyFilter = btn.dataset.filter;
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    updateHistoryUI();
+  });
+});
+
+document.querySelectorAll('.trade-table th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if (historySortKey === key) historySortDir = historySortDir === 'asc' ? 'desc' : 'asc';
+    else { historySortKey = key; historySortDir = 'desc'; }
+    document.querySelectorAll('.trade-table th[data-sort]').forEach(h => {
+      h.classList.toggle('sorted', h === th);
+      const arrow = h.querySelector('.sort-arrow');
+      if (arrow) arrow.textContent = h === th ? (historySortDir === 'asc' ? '▲' : '▼') : '▼';
+    });
+    updateHistoryUI();
+  });
+});
+
+/* ============================================================
+   CONNECTION
+   ============================================================ */
+const DERIV_WS = 'wss://ws.derivws.com/websockets/v3?app_id=1089';
+
+function setConnection(state, text) {
+  els.connectionPill.className = 'connection-pill' + (state === 'live' ? '' : state === 'error' ? ' error' : ' off');
+  els.connectionText.textContent = text;
+}
+
+async function start(reason = 'Manual start') {
+  const token = ++startToken;
+  clearTimeout(reconnectTimer);
+  if (socket) { try { socket.close(); } catch(e){} socket = null; }
+  candles = [];
+  notifiedSignals.clear();
+  closedTrades.length = 0;
+  activeTrades.clear();
+  needsBackfill = true;
+  setConnection('connecting', 'Connecting');
+  els.signalMain.textContent = '···';
+  els.signalDesc.textContent = reason === 'Manual reconnect' ? 'Reconnecting to Deriv live market data…' : 'Loading Deriv live market data…';
+
+  const symbol = $('instrument').value;
+  const granularity = parseInt($('granularity').value);
+  currentSymbol = symbol;
+  currentGranularity = granularity;
+
+  params = {
+    swingLookback: parseInt($('swingLookback').value),
+    sweepWindow: 10,
+    signalValidity: parseInt($('signalValidity').value),
+    smcTolerance: parseFloat($('smcTolerance').value),
+    trendlineTolerance: parseFloat($('trendlineTolerance').value),
+    trendlineRetestBars: parseInt($('trendlineRetestBars').value),
+    patternLookback: parseInt($('patternLookback').value),
+    patternTolerance: parseFloat($('patternTolerance').value)
+  };
+
+  els.chartSymbol.textContent = symbol;
+  els.chartTF.textContent = tfLabel(granularity);
+
+  try {
+    const initial = await fetchInitial(symbol, granularity);
+    if (token !== startToken) return;
+    candles = initial;
+  } catch (err) {
+    setConnection('error', 'Failed');
+    els.signalMain.textContent = 'OFFLINE';
+    els.signalDesc.textContent = 'Connection failed: ' + (err?.message || 'Unable to load market data.');
+    return;
+  }
+
+  if (token !== startToken) return;
+
+  socket = new WebSocket(DERIV_WS);
+  socket.onopen = () => {
+    setConnection('live', 'Live · ' + symbol);
+    socket.send(JSON.stringify({ ticks_history: symbol, end: 'latest', count: 1, granularity, style: 'candles', subscribe: 1 }));
+  };
+  socket.onmessage = (evt) => {
+    let data;
+    try { data = JSON.parse(evt.data); } catch (e) { return; }
+    if (data.error) { setConnection('error', 'Stream error'); els.signalDesc.textContent = 'Deriv stream error: ' + (data.error.message || 'Unknown error'); return; }
+    if (data.ohlc && data.msg_type === 'ohlc') {
+      upsertCandle({
+        epoch: parseInt(data.ohlc.open_time),
+        open: parseFloat(data.ohlc.open), high: parseFloat(data.ohlc.high),
+        low: parseFloat(data.ohlc.low), close: parseFloat(data.ohlc.close)
+      });
+      render();
+    }
+  };
+  socket.onerror = () => setConnection('error', 'Connection error');
+  socket.onclose = () => {
+    setConnection('off', 'Disconnected');
+    if (token === startToken && currentUser) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => start('Auto reconnect'), 2500);
+    }
+  };
+
+  render();
+}
+
+function fetchInitial(symbol, granularity) {
+  return new Promise((resolve, reject) => {
+    const ws = new WebSocket(DERIV_WS);
+    const t = setTimeout(() => { ws.close(); reject(new Error('timeout')); }, 12000);
+    ws.onopen = () => ws.send(JSON.stringify({ ticks_history: symbol, end: 'latest', count: 400, granularity, style: 'candles' }));
+    ws.onmessage = (evt) => {
+      let data;
+      try { data = JSON.parse(evt.data); } catch (e) { return; }
+      if (data.error) { clearTimeout(t); ws.close(); reject(new Error(data.error.message)); return; }
+      if (data.candles) {
+        clearTimeout(t); ws.close();
+        resolve(data.candles.map(c => ({
+          epoch: parseInt(c.epoch), open: parseFloat(c.open),
+          high: parseFloat(c.high), low: parseFloat(c.low), close: parseFloat(c.close)
+        })));
+      }
+    };
+    ws.onerror = () => { clearTimeout(t); reject(new Error('ws error')); };
+  });
+}
+
+function upsertCandle(c) {
+  const last = candles[candles.length - 1];
+  if (!last || c.epoch > last.epoch) {
+    candles.push(c);
+    if (candles.length > 500) candles.shift();
+  } else if (c.epoch === last.epoch) {
+    candles[candles.length - 1] = c;
+  }
+}
+
+/* ============================================================
+   ANALYZE ALL
+   ============================================================ */
+function analyzeAll() {
+  const highs = candles.map(c => c.high);
+  const lows = candles.map(c => c.low);
+  const closes = candles.map(c => c.close);
+  const opens = candles.map(c => c.open);
+
+  const regularResult = detectSignals(highs, lows, closes, opens, params.swingLookback, params.sweepWindow, 'regular');
+  const invertedResult = detectSignals(highs, lows, closes, opens, params.swingLookback, params.sweepWindow, 'inverted');
+  const smcResult = detectSMCSignals(highs, lows, closes, opens, params.swingLookback, params.smcTolerance);
+  const trendlineResult = detectTrendlinePatterns(highs, lows, closes, opens, params.swingLookback, params.trendlineTolerance, params.trendlineRetestBars);
+  const patternResult = detectChartPatterns(highs, lows, closes, opens, params.swingLookback, params.patternTolerance, params.patternLookback);
+
+  const lastIdx = closes.length - 1;
+  function pickActive(result) {
+    for (let i = result.signals.length - 1; i >= 0; i--) {
+      const sig = result.signals[i];
+      const age = lastIdx - sig.chochIndex;
+      if (age > params.signalValidity) break;
+      return { ...sig, barsAgo: age };
+    }
+    return null;
+  }
+
+  return {
+    regular: { ...regularResult, active: pickActive(regularResult) },
+    inverted: { ...invertedResult, active: pickActive(invertedResult) },
+    smc: { ...smcResult, active: smcResult.signals.length > 0 ? smcResult.signals[0] : null },
+    trendline: { ...trendlineResult, active: pickActive(trendlineResult) },
+    patterns: patternResult,
+    common: {
+      sweeps: regularResult.sweeps, chochEvents: regularResult.chochEvents,
+      obs: smcResult.obs, bullFVGs: smcResult.bullFVGs, bearFVGs: smcResult.bearFVGs
+    }
+  };
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function tfLabel(seconds) {
+  const m = { 60: '1m', 300: '5m', 900: '15m', 3600: '1H', 14400: '4H', 86400: '1D' };
+  return m[seconds] || seconds + 's';
+}
+
+function render() {
+  if (candles.length < 20) return;
+
+  const analysis = analyzeAll();
+  lastAnalysis = analysis;
+
+  if (needsBackfill) {
+    backfillTrades(analysis);
+    needsBackfill = false;
+  } else {
+    const allSignals = [
+      ...analysis.regular.signals.map(s => ({ ...s, mode: 'regular' })),
+      ...analysis.inverted.signals.map(s => ({ ...s, mode: 'inverted' })),
+      ...analysis.smc.signals.map(s => ({ ...s, mode: 'smc' })),
+      ...analysis.trendline.signals.map(s => ({ ...s, mode: 'trendline' })),
+      ...(analysis.patterns?.patterns || []).filter(p => p.stage !== 'Forming')
+    ];
+    for (const sig of allSignals) registerTrade(sig);
+  }
+  checkActiveTrades();
+  dispatchNotifications(analysis);
+  updateHistoryUI();
+
+  els.badgeRegular.textContent = analysis.regular.signals.length;
+  els.badgeInverted.textContent = analysis.inverted.signals.length;
+  els.badgeSMC.textContent = analysis.smc.signals.length;
+  els.badgeTrendline.textContent = analysis.trendline.signals.length;
+  els.badgePatterns.textContent = analysis.patterns.patterns.length;
+
+  const sig = activeMode === 'regular' ? analysis.regular.active
+            : activeMode === 'inverted' ? analysis.inverted.active
+            : activeMode === 'smc' ? analysis.smc.active
+            : activeMode === 'trendline' ? analysis.trendline.active
+            : analysis.patterns.active;
+  const last = candles[candles.length - 1];
+  els.livePrice.textContent = last.close.toFixed(4);
+
+  const isInverted = activeMode === 'inverted';
+  const isSMC = activeMode === 'smc';
+  const isTrendline = activeMode === 'trendline';
+  const isPatterns = activeMode === 'patterns';
+  const modeLabel = isPatterns ? 'Chart Pattern Scanner' : (isTrendline ? 'Trendline Pattern' : (isSMC ? 'Smart Money Concepts' : (isInverted ? 'Inverted Liq Sweep' : 'Liquidity Sweep')));
+  els.signalEyebrow.textContent = 'Active Signal · ' + modeLabel;
+  els.planSectionTitle.textContent = modeLabel + ' · Trade Plan';
+  els.planSectionTitle.classList.toggle('inverted', isInverted);
+  els.planSectionTitle.classList.toggle('smc', isSMC);
+  els.planSectionTitle.classList.toggle('trendline', isTrendline);
+  els.planSectionTitle.classList.toggle('patterns', isPatterns);
+  els.riskSectionTitle.textContent = modeLabel + ' · Risk Profile';
+  els.riskSectionTitle.classList.toggle('inverted', isInverted);
+  els.riskSectionTitle.classList.toggle('smc', isSMC);
+  els.riskSectionTitle.classList.toggle('trendline', isTrendline);
+  els.riskSectionTitle.classList.toggle('patterns', isPatterns);
+  els.tabHint.textContent = modeDescriptions[activeMode] || '';
+
+  if (!sig) {
+    els.signalCard.className = 'signal-card';
+    els.signalMain.textContent = 'WAIT';
+    if (isPatterns) els.signalDesc.textContent = 'No active chart pattern yet. Scanner is checking flags, pennants, triangles, wedges, channels, rectangles, tops, bottoms, shoulders, cups, rounding structures, broadening and diamond formations.';
+    else if (isTrendline) els.signalDesc.textContent = 'No active trendline setup. Waiting for 3 valid touches, a clean breakout, and a retest of the opposite side of the line.';
+    else if (isSMC) els.signalDesc.textContent = 'No active SMC setup. Waiting for price to retrace into a fresh Order Block or Fair Value Gap.';
+    else if (isInverted) els.signalDesc.textContent = 'No active inverted setup. Waiting for a liquidity sweep to fail, then a close back through the swept level for continuation.';
+    else els.signalDesc.textContent = 'No active setup. Waiting for a liquidity sweep followed by a reversal CHoCH.';
+    resetPlan();
+  } else {
+    const isLong = sig.chochType === 'bullish';
+    const cardClass = isSMC ? (isLong ? 'smc-long' : 'smc-short') : (isLong ? 'long' : 'short');
+    els.signalCard.className = 'signal-card ' + cardClass;
+    els.signalMain.textContent = isLong ? 'BUY' : 'SELL';
+
+    if (isPatterns) {
+      const stage = sig.stage || 'Forming';
+      els.signalMain.textContent = sig.patternName || 'PATTERN';
+      els.signalDesc.textContent = `${sig.patternName} · ${sig.category || 'Chart Pattern'} · ${stage}. ${sig.description || ''} ${sig.direction === 'bullish' ? 'Bullish structure.' : sig.direction === 'bearish' ? 'Bearish structure.' : 'Neutral structure.'}`;
+      els.planTagEntry.textContent = stage === 'Retest' ? 'RETEST @' : stage === 'Breakout' ? 'BREAK @' : 'WATCH @';
+      els.planEntrySub.textContent = stage === 'Retest' ? 'retest confirmation' : stage === 'Breakout' ? 'breakout confirmation' : 'pattern forming';
+    } else if (isTrendline) {
+      const trendLabel = sig.patternType === 'downtrend-breakout' ? 'descending resistance' : 'ascending support';
+      els.signalDesc.textContent = `${sig.touchCount}-touch ${trendLabel} broke ${isLong ? 'up' : 'down'}, then retested the opposite side. ${isLong ? 'Buy' : 'Sell'} the confirmed retest.`;
+      els.planTagEntry.textContent = 'RETEST @';
+      els.planEntrySub.textContent = isLong ? 'buy the retest' : 'sell the retest';
+    } else if (isSMC) {
+      const zoneLabel = sig.zoneType === 'OB' ? 'Order Block' : 'Fair Value Gap';
+      const zoneRange = `${sig.zoneBottom.toFixed(4)} – ${sig.zoneTop.toFixed(4)}`;
+      const barsFormed = candles.length - 1 - sig.formIndex;
+      els.signalDesc.textContent = `Price is retracing into a fresh ${sig.zoneType === 'OB' ? 'bullish' : 'bearish'} ${zoneLabel} (${zoneRange}) formed ${barsFormed} bars ago. ${isLong ? 'Buy' : 'Sell'} the retest.`;
+      els.planTagEntry.textContent = 'ZONE ' + sig.zoneType;
+      els.planEntrySub.textContent = isLong ? 'buy the zone' : 'sell the zone';
+    } else {
+      const sweepSide = sig.sweepType === 'buy-side' ? 'Buy-side' : 'Sell-side';
+      const trapWord = isInverted ? 'trapped' : 'reversed';
+      const sweepWord = isInverted ? 'continues through the swept level' : 'flips';
+      els.signalDesc.textContent = `${sweepSide} sweep at ${sig.sweepWick.toFixed(4)} — ${chochDirectionText(sig.chochType)} CHoCH fired ${sig.barsAgo} bar${sig.barsAgo === 1 ? '' : 's'} ago. Setup: sweep ${trapWord}, price ${sweepWord} ${isLong ? 'up' : 'down'}.`;
+      els.planTagEntry.textContent = 'BUY/SELL @';
+      els.planEntrySub.textContent = isLong ? 'enter long' : 'enter short';
+    }
+
+    els.planEntry.textContent = sig.entry.toFixed(4);
+    els.planSL.textContent = sig.sl.toFixed(4);
+    els.planTP.textContent = sig.tp.toFixed(4);
+    els.planSLSub.textContent = sig.slNote;
+
+    els.statRR.textContent = sig.rr.toFixed(2);
+    els.statRR.className = 'metric-value';
+    els.statRisk.textContent = sig.risk.toFixed(4);
+    els.statRisk.className = 'metric-value';
+    els.statReward.textContent = sig.reward.toFixed(4);
+    els.statReward.className = 'metric-value';
+
+    if (isPatterns) {
+      els.statBarsLabel.textContent = 'Confidence';
+      els.statBars.textContent = (sig.confidence || 0) + '%';
+    } else if (isTrendline) {
+      els.statBarsLabel.textContent = 'Touches';
+      els.statBars.textContent = sig.touchCount;
+    } else if (isSMC) {
+      const barsFormed = candles.length - 1 - sig.formIndex;
+      els.statBarsLabel.textContent = 'Zone Age';
+      els.statBars.textContent = barsFormed;
+    } else {
+      els.statBarsLabel.textContent = 'Signal Age';
+      els.statBars.textContent = sig.barsAgo;
+    }
+    els.statBars.className = 'metric-value';
+  }
+
+  els.lastUpdate.textContent = new Date().toLocaleTimeString('en-GB', { hour12: false });
+  try { renderPatternPanel(analysis.patterns, isPatterns); } catch (e) {}
+  try { drawChart(); } catch (e) {}
+  try { drawEvents(analysis.common, activeMode, { ...analysis.smc, trendlineActive: analysis.trendline.active, patternActive: analysis.patterns.active, patterns: analysis.patterns.patterns }); } catch (e) {}
+}
+
+function chochDirectionText(type) { return type === 'bullish' ? 'Bullish' : 'Bearish'; }
+
+function resetPlan() {
+  ['planEntry', 'planSL', 'planTP'].forEach(id => { els[id].textContent = '—'; });
+  els.planEntrySub.textContent = 'awaiting signal';
+  els.planSLSub.textContent = '—';
+  els.planTagEntry.textContent = 'BUY/SELL @';
+  els.statBarsLabel.textContent = 'Signal Age';
+  ['statRR', 'statRisk', 'statReward', 'statBars'].forEach(id => {
+    els[id].textContent = '—';
+    els[id].className = 'metric-value dim';
+  });
+}
+
+function renderPatternPanel(result, visible) {
+  if (!els.patternPanel) return;
+  els.patternPanel.style.display = visible ? 'block' : 'none';
+  if (!visible) return;
+  const list = (result?.patterns || []).slice(0, 18);
+  els.patternPanelCount.textContent = list.length + ' pattern' + (list.length===1?'':'s');
+  if (!list.length) {
+    els.patternGrid.innerHTML = '<div class="pattern-empty">No chart structures detected in the current lookback.</div>';
+    els.patternLibrary.innerHTML = '';
+    return;
+  }
+  els.patternGrid.innerHTML = list.map(p => {
+    const dir = p.direction==='bullish'?'bull':p.direction==='bearish'?'bear':'neutral';
+    return `<div class="pattern-row ${p===result.active?'pattern-card-active':''}" title="${(p.description||'').replace(/"/g,'&quot;')}">
+      <div class="pattern-name">${p.patternName}</div>
+      <div class="pattern-meta">${p.stage}</div>
+      <div class="pattern-direction ${dir}">${p.direction}</div>
+      <div class="pattern-confidence">${p.confidence}%</div>
+    </div>`;
+  }).join('');
+  const groups = [
+    ['Continuation','Bullish Flag · Bearish Flag · Bullish Pennant · Bearish Pennant · Ascending Triangle · Descending Triangle · Symmetrical Triangle · Ascending Channel · Descending Channel · Horizontal Channel · Bullish Rectangle · Bearish Rectangle · Cup & Handle'],
+    ['Reversal','Rising Wedge · Falling Wedge · Double Top · Double Bottom · Triple Top · Triple Bottom · Head & Shoulders · Inverse Head & Shoulders · Rounding Top · Rounding Bottom · Inverse Cup & Handle'],
+    ['Expansion','Broadening Formation · Diamond Top · Diamond Bottom']
+  ];
+  els.patternLibrary.innerHTML = groups.map(([title,desc]) => `<span class="pattern-chip neutral"><strong>${title}</strong> · ${desc}</span>`).join('');
+}
+
+/* ============================================================
+   CHART WITH SIGNAL MARKERS
+   ============================================================ */
+
+function drawChart() {
+  const sliceLen = 80;
+  const slice = candles.slice(-sliceLen);
+  if (!slice.length) return;
+
+  const startIdx = candles.length - slice.length;
+  const labels = slice.map(c => new Date(c.epoch * 1000).toLocaleTimeString('en-GB', { hour12: false }));
+  const closes = slice.map(c => c.close);
+
+  const activeResult = activeMode === 'regular'
+    ? lastAnalysis?.regular
+    : activeMode === 'inverted'
+      ? lastAnalysis?.inverted
+      : activeMode === 'smc'
+        ? lastAnalysis?.smc
+        : activeMode === 'trendline'
+          ? lastAnalysis?.trendline
+          : lastAnalysis?.patterns;
+  const signalByIndex = new Map();
+  for (const s of (activeResult?.signals || [])) {
+    const local = s.chochIndex - startIdx;
+    if (local >= 0 && local < slice.length) signalByIndex.set(local, s);
+  }
+
+  const pointRadius = closes.map((_, i) => signalByIndex.has(i) ? 4 : 0);
+  const pointBorderWidth = closes.map((_, i) => signalByIndex.has(i) ? 2 : 0);
+  const pointBg = closes.map((_, i) => {
+    const s = signalByIndex.get(i);
+    if (!s) return 'rgba(0,0,0,0)';
+    return s.chochType === 'bullish' ? '#22d79a' : '#ff5b6e';
+  });
+
+  const trend = activeMode === 'trendline' ? (lastAnalysis?.trendline?.active || null) : null;
+  const trendlineData = trend ? slice.map((_, local) => {
+    const global = startIdx + local;
+    if (global < trend.startIndex || global > Math.min(candles.length - 1, trend.retestIndex + 8)) return null;
+    return trend.lineAt(trend.anchorA, trend.anchorB, global);
+  }) : [];
+  const touchRadius = slice.map((_, local) => trend && trend.touchIndices.includes(startIdx + local) ? 4 : 0);
+  const breakoutRadius = slice.map((_, local) => trend && trend.breakoutIndex === startIdx + local ? 5 : 0);
+  const retestRadius = slice.map((_, local) => trend && trend.retestIndex === startIdx + local ? 6 : 0);
+  const activePattern = activeMode === 'patterns' ? (lastAnalysis?.patterns?.active || null) : null;
+  const patternUpperData = activePattern?.upper ? slice.map((_, local) => { const g=startIdx+local; if(g<activePattern.startIndex || g>Math.min(candles.length-1, activePattern.endIndex+12)) return null; const a=activePattern.upper.a,b=activePattern.upper.b; return a.price+((b.price-a.price)/(b.index-a.index))*(g-a.index); }) : [];
+  const patternLowerData = activePattern?.lower ? slice.map((_, local) => { const g=startIdx+local; if(g<activePattern.startIndex || g>Math.min(candles.length-1, activePattern.endIndex+12)) return null; const a=activePattern.lower.a,b=activePattern.lower.b; return a.price+((b.price-a.price)/(b.index-a.index))*(g-a.index); }) : [];
+  const patternMarkerRadius = activePattern ? slice.map((_, local) => activePattern.signalIndex === startIdx+local ? 6 : 0) : [];
+
+  if (typeof Chart === 'undefined') {
+    return;
+  }
+  const ctx = els.priceChart.getContext('2d');
+  if (chart) chart.destroy();
+
+  const gridColor = 'rgba(116,128,148,.10)';
+  const textColor = '#748094';
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: closes,
+        borderColor: '#7db8ff',
+        borderWidth: 1.6,
+        pointRadius,
+        pointHoverRadius: 5,
+        pointBorderWidth,
+        pointBackgroundColor: pointBg,
+        pointBorderColor: '#0c1017',
+        fill: true,
+        backgroundColor: (context) => {
+          const { chart } = context;
+          const area = chart.chartArea;
+          if (!area) return 'rgba(90,167,255,.05)';
+          const g = chart.ctx.createLinearGradient(0, area.top, 0, area.bottom);
+          g.addColorStop(0, 'rgba(90,167,255,.11)');
+          g.addColorStop(1, 'rgba(90,167,255,0)');
+          return g;
+        },
+        tension: .18
+      },
+      ...(trend ? [{
+        label: 'Trendline', data: trendlineData, borderColor: '#47d3ff', borderWidth: 2,
+        pointRadius: 0, pointHoverRadius: 0, borderDash: [7, 6], spanGaps: true, fill: false, tension: 0
+      }, {
+        label: 'Trendline touches', data: closes.map((v, local) => touchRadius[local] ? v : null),
+        borderColor: '#47d3ff', pointBackgroundColor: '#47d3ff', pointBorderColor: '#0c1017',
+        pointRadius: touchRadius, pointHoverRadius: 6, showLine: false
+      }, {
+        label: 'Breakout', data: closes.map((v, local) => breakoutRadius[local] ? v : null),
+        borderColor: '#22d79a', pointBackgroundColor: '#22d79a', pointBorderColor: '#0c1017',
+        pointRadius: breakoutRadius, pointHoverRadius: 7, showLine: false
+      }, {
+        label: 'Retest', data: closes.map((v, local) => retestRadius[local] ? v : null),
+        borderColor: '#fff', pointBackgroundColor: '#fff', pointBorderColor: '#47d3ff',
+        pointRadius: retestRadius, pointHoverRadius: 8, showLine: false
+      }] : []),
+      ...(activePattern ? [{
+        label: 'Pattern Upper', data: patternUpperData, borderColor: '#f472b6', borderWidth: 1.7, pointRadius: 0, borderDash: [5,5], spanGaps: true, showLine: true, fill: false, tension: 0
+      }, {
+        label: 'Pattern Lower', data: patternLowerData, borderColor: '#f472b6', borderWidth: 1.7, pointRadius: 0, borderDash: [5,5], spanGaps: true, showLine: true, fill: false, tension: 0
+      }, {
+        label: 'Pattern Signal', data: closes.map((v,local)=>patternMarkerRadius[local]?v:null), borderColor: '#f472b6', pointBackgroundColor: activePattern.direction==='bullish' ? '#22d79a' : '#ff5b6e', pointBorderColor:'#0c1017', pointRadius: patternMarkerRadius, pointHoverRadius:8, showLine:false
+      }] : [])
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 220 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0a0e14',
+          borderColor: '#2a394d',
+          borderWidth: 1,
+          titleColor: '#f4f7fb',
+          bodyColor: '#a7b2c4',
+          displayColors: false,
+          callbacks: {
+            label: (ctx) => {
+              const s = signalByIndex.get(ctx.dataIndex);
+              if (s) return `${ctx.parsed.y.toFixed(4)} · ${s.chochType === 'bullish' ? 'BUY' : 'SELL'} signal`;
+              if (ctx.dataset?.label === 'Trendline') return `Trendline ${ctx.parsed.y.toFixed(4)}`;
+              if (ctx.dataset?.label === 'Pattern Upper' || ctx.dataset?.label === 'Pattern Lower') return `${activePattern?.patternName || 'Pattern'} boundary ${ctx.parsed.y.toFixed(4)}`;
+              return `Price ${ctx.parsed.y.toFixed(4)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: gridColor, drawTicks: false },
+          border: { display: false },
+          ticks: { color: textColor, maxTicksLimit: 8, font: { size: 8, family: 'JetBrains Mono' } }
+        },
+        y: {
+          grid: { color: gridColor, drawTicks: false },
+          border: { display: false },
+          ticks: { color: textColor, maxTicksLimit: 6, padding: 8, font: { size: 8, family: 'JetBrains Mono' } }
+        }
+      }
+    }
+  });
+}
+
+function drawEvents(common, mode, smc) {
+  const rows = [];
+  const push = (index, title, detail, tone) => {
+    if (!Number.isFinite(index) || !candles[index]) return;
+    rows.push({
+      index,
+      time: new Date(candles[index].epoch * 1000).toLocaleTimeString('en-GB', { hour12: false }),
+      title,
+      detail,
+      tone
+    });
+  };
+
+  const sweeps = (common?.sweeps || []).slice(-8);
+  const chochs = (common?.chochEvents || []).slice(-8);
+  for (const s of sweeps) {
+    const label = s.type === 'buy-side' ? 'SELL-SIDE LIQUIDITY' : 'BUY-SIDE LIQUIDITY';
+    push(s.index, 'Liquidity Sweep', `${label} · ${s.wick.toFixed(4)}`, 'sweep');
+  }
+  for (const c of chochs) {
+    push(c.index, `${c.type === 'bullish' ? 'Bullish' : 'Bearish'} CHoCH`, `Broken level · ${c.brokenLevel.toFixed(4)}`, c.type === 'bullish' ? 'bull' : 'bear');
+  }
+
+  const obs = (common?.obs || []).slice(-6);
+  const bullFvgs = (common?.bullFVGs || []).slice(-4);
+  const bearFvgs = (common?.bearFVGs || []).slice(-4);
+  for (const ob of obs) push(ob.index, `${ob.type === 'bullish' ? 'Bullish' : 'Bearish'} Order Block`, `${ob.low.toFixed(4)} – ${ob.high.toFixed(4)}`, 'ob');
+  for (const f of [...bullFvgs, ...bearFvgs]) push(f.index, `${f.type === 'bullish' ? 'Bullish' : 'Bearish'} FVG`, `${f.bottom.toFixed(4)} – ${f.top.toFixed(4)}`, 'fvg');
+
+  if (mode === 'trendline' && smc?.trendlineActive) {
+    const t = smc.trendlineActive;
+    for (const idx of (t.touchIndices || []).slice(-4)) push(idx, 'Trendline Touch', `${t.touchCount}-touch ${t.patternType === 'downtrend-breakout' ? 'descending resistance' : 'ascending support'}`, 'trendline');
+    push(t.breakoutIndex, `${t.direction === 'bullish' ? 'Bullish' : 'Bearish'} Trendline Breakout`, 'close through trendline', t.direction === 'bullish' ? 'bull' : 'bear');
+    push(t.retestIndex, 'Trendline Retest', `opposite-side retest · ${t.entry.toFixed(4)}`, t.direction === 'bullish' ? 'bull' : 'bear');
+  }
+
+  if (mode === 'patterns') {
+    const plist = (smc?.patterns || []).slice(0, 10);
+    for (const p of plist) push(p.signalIndex ?? p.chochIndex, `${p.patternName} · ${p.stage}`, `${p.direction} · ${p.confidence}% confidence`, p.direction === 'bullish' ? 'bull' : p.direction === 'bearish' ? 'bear' : 'patterns');
+  }
+
+  rows.sort((a,b) => b.index - a.index);
+  const compact = rows.slice(0, 10);
+  if (!compact.length) {
+    els.eventLog.innerHTML = '<div class="empty-state">Waiting for market events...</div>';
+    return;
+  }
+
+  els.eventLog.innerHTML = compact.map(e => `
+    <div class="event-item">
+      <div class="event-time">${e.time}</div>
+      <div class="event-body">
+        <div class="event-title ${e.tone}"><span class="event-icon ${e.tone}"></span>${e.title}</div>
+        <div class="event-detail">${e.detail}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+</script>
+</body>
+</html>
